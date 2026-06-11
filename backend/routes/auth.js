@@ -11,6 +11,7 @@ const {
   forgotPasswordValidation,
   resetPasswordValidation
 } = require('../middleware/validate');
+const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/email'); // 🆕
 
 const JWT_SECRET = process.env.JWT_SECRET || 'famille_fraicheur_secret_key_change_me';
 
@@ -36,7 +37,6 @@ router.post('/login', loginValidation, async (req, res) => {
     if (user.role === 'customer' && !user.email_verified) {
       return res.status(403).json({ error: 'Veuillez vérifier votre adresse email avant de vous connecter.' });
     }
-
     const token = jwt.sign(
       { id: user.id, role: user.role, name: user.name, email: user.email },
       JWT_SECRET,
@@ -52,7 +52,7 @@ router.post('/login', loginValidation, async (req, res) => {
         phone: user.phone,
         whatsapp: user.whatsapp,
         rating_avg: user.rating_avg,
-        is_online: user.is_online   // 🔥 ajouté pour le livreur
+        is_online: user.is_online
       }
     });
   } catch (err) {
@@ -99,7 +99,12 @@ router.post('/register', registerValidation, async (req, res) => {
       [name, email, password_hash, finalRole, phone || null, whatsapp || null, verificationCode]
     );
 
-    console.log(`🔐 Code de vérification pour ${email} : ${verificationCode}`);
+    // Envoyer le code par email
+    try {
+      await sendVerificationEmail(email, verificationCode);
+    } catch (err) {
+      console.error("Erreur lors de l'envoi de l'email de vérification :", err);
+    }
 
     if (isAdmin) {
       return res.status(201).json({ user: newUser[0] });
@@ -180,8 +185,14 @@ router.post('/forgot-password', forgotPasswordValidation, async (req, res) => {
       'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
       [resetToken, resetTokenExpires, user.id]
     );
-    console.log(`🔑 Lien de réinitialisation pour ${email} :`);
-    console.log(`   http://localhost:3000/reset-password.html?token=${resetToken}`);
+
+    // Envoyer le lien par email
+    try {
+      await sendPasswordResetEmail(email, resetToken);
+    } catch (err) {
+      console.error("Erreur lors de l'envoi de l'email de réinitialisation :", err);
+    }
+
     res.json({ message: 'Si cet email existe, un lien de réinitialisation a été envoyé.' });
   } catch (err) {
     console.error('Forgot password error:', err);
@@ -215,7 +226,7 @@ router.post('/reset-password', resetPasswordValidation, async (req, res) => {
 });
 
 // ========================
-// GET /api/auth/me (protégé) — AJOUT is_online
+// GET /api/auth/me (protégé)
 // ========================
 router.get('/me', auth, async (req, res) => {
   try {
