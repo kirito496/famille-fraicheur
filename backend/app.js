@@ -55,7 +55,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/locations', require('./routes/locations'));
 app.use('/api/favorites', require('./routes/favorites'));
 app.use('/api/special-offers', require('./routes/specialOffers'));
-app.use('/api/notifications', require('./routes/notifications'));
+// app.use('/api/notifications', require('./routes/notifications')); // Désactivé temporairement
 app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/quartiers', require('./routes/quartiers'));
 app.use('/api/delivery-slots', require('./routes/deliverySlots'));
