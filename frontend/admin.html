@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Famille & Fraîcheur – Administration</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg: #FAFAFA;
+      --white: #FFFFFF;
+      --text: #212121;
+      --text-light: #757575;
+      --border: #E0E0E0;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --green: #2E7D32;
+      --orange: #F57C00;
+      --red: #D32F2F;
+    }
+    body.dark-mode {
+      --bg: #1a1a1a;
+      --white: #2a2a2a;
+      --text: #e0e0e0;
+      --text-light: #aaaaaa;
+      --border: #444;
+      --shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    body { padding-bottom: 0; margin:0; font-family: "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem; background: var(--white); box-shadow: var(--shadow);
+      position: sticky; top:0; z-index:10;
+    }
+    .admin-wrapper {
+      display: flex;
+      min-height: calc(100vh - 60px);
+      max-height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+    .admin-sidebar {
+      width: 240px;
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      padding: 1rem 0;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .admin-main {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      background: var(--bg);
+    }
+    .admin-nav-item {
+      display: block;
+      padding: 0.7rem 1.5rem;
+      color: var(--text);
+      font-size: 0.95rem;
+      border-left: 4px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .admin-nav-item:hover,
+    .admin-nav-item.active {
+      background: #e8f5e9;
+      color: var(--green);
+      border-left-color: var(--green);
+      font-weight: 500;
+    }
+    body.dark-mode .admin-nav-item:hover,
+    body.dark-mode .admin-nav-item.active {
+      background: #333;
+      color: #81c784;
+    }
+    .admin-section { display: none; }
+    .admin-section.active { display: block; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .stat-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 1.2rem;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .stat-number { font-size: 1.8rem; font-weight: bold; color: var(--green); }
+    .stat-label { font-size: 0.85rem; color: var(--text-light); margin-top: 0.2rem; }
+
+    .table-wrapper {
+      overflow-x: auto;
+      background: var(--white);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      margin-bottom: 1rem;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { background: #f9f9f9; font-weight: 600; color: var(--text); }
+    body.dark-mode th { background: #333; }
+
+    .map-large { height: 400px; border-radius: 12px; box-shadow: var(--shadow); }
+
+    .form-panel {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 1.2rem;
+      box-shadow: var(--shadow);
+      margin-top: 1rem;
+      display: none;
+    }
+    .form-panel.show { display: block; }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+    .btn-primary { background: var(--green); color: white; }
+    .btn-secondary { background: transparent; border: 2px solid var(--green); color: var(--green); }
+    .btn-danger { background: var(--red); color: white; }
+    .btn-orange { background: var(--orange); color: white; }
+    .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+    .badge-status {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .status-pending { background: #fff3e0; color: #e65100; }
+    .status-assigned { background: #e3f2fd; color: #0d47a1; }
+    .status-in_progress { background: #e8f5e9; color: #1b5e20; }
+    .status-delivered { background: #e0f2f1; color: #004d40; }
+    .status-cancelled { background: #ffebee; color: #b71c1c; }
+    .status-pending_payment { background: #fff8e1; color: #f57f17; }
+
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .countdown { font-weight: bold; color: var(--orange); }
+
+    .checkbox-list {
+      max-height: 200px; overflow-y: auto; border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.5rem; margin-top: 0.3rem;
+    }
+    .checkbox-list label {
+      display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; font-size: 0.9rem; cursor: pointer;
+    }
+    .checkbox-list input[type="checkbox"] { width: auto; }
+
+    @media (max-width: 768px) {
+      .admin-wrapper { flex-direction: column; max-height: none; }
+      .admin-sidebar {
+        width: 100%; border-right: none; border-bottom: 1px solid var(--border);
+        padding: 0.5rem 1rem; display: flex; overflow-x: auto; white-space: nowrap;
+      }
+      .admin-nav-item { display: inline-block; border-left: none; border-bottom: 2px solid transparent; padding: 0.5rem 1rem; font-size: 0.85rem; }
+      .admin-nav-item.active { border-bottom-color: var(--green); }
+      .admin-main { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h2>🛠️ Administration</h2>
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <a href="chat.html" style="position:relative;">
+        <i class="fas fa-comments fa-lg" style="color:var(--text);"></i>
+        <span class="badge" id="messageBadge" style="display:none;">0</span>
+      </a>
+      <button class="btn btn-sm btn-secondary" id="themeToggle" title="Changer le thème"><i class="fas fa-moon"></i></button>
+      <button class="btn btn-sm btn-secondary" id="logoutBtn"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </div>
+
+  <div class="admin-wrapper">
+    <nav class="admin-sidebar" id="adminSidebar">
+      <span class="admin-nav-item active" data-section="dashboard">📊 Tableau de bord</span>
+      <span class="admin-nav-item" data-section="products">📦 Produits</span>
+      <span class="admin-nav-item" data-section="orders">🛒 Commandes</span>
+      <span class="admin-nav-item" data-section="users">👥 Utilisateurs</span>
+      <span class="admin-nav-item" data-section="map">🗺️ Carte</span>
+      <span class="admin-nav-item" data-section="slots">🕒 Créneaux</span>
+      <span class="admin-nav-item" data-section="promos">🎉 Promos & Notifs</span>
+      <span class="admin-nav-item" data-section="disputes">⚠️ Litiges</span>
+    </nav>
+
+    <div class="admin-main">
+      <!-- Dashboard -->
+      <section class="admin-section active" id="section-dashboard">
+        <div class="stats-grid" id="dashboardStats"></div>
+        <h3>Livreurs en ligne</h3>
+        <div id="onlineDeliveryList" class="card" style="background:var(--white); padding:1rem; border-radius:12px; margin-bottom:1rem;">Aucun livreur en ligne.</div>
+        <h3 class="mt-2">Dernières commandes</h3>
+        <div id="recentOrders"></div>
+      </section>
+
+      <!-- Produits (avec upload image) -->
+      <section class="admin-section" id="section-products">
+        <button class="btn btn-primary mb-1" id="showProductFormBtn"><i class="fas fa-plus"></i> Ajouter un produit</button>
+        <div class="table-wrapper">
+          <table><thead><tr><th>Image</th><th>Nom</th><th>Prix</th><th>Stock</th><th>Expiration</th><th>Actions</th></tr></thead><tbody id="productsTable"></tbody></table>
+        </div>
+        <div id="productFormPanel" class="form-panel">
+          <h3 id="productFormTitle">Nouveau produit</h3>
+          <div class="input-group"><label>Nom</label><input type="text" id="prodName"></div>
+          <div class="input-group"><label>Description</label><textarea id="prodDesc" rows="2"></textarea></div>
+          <div class="input-group"><label>Prix (FCFA)</label><input type="number" id="prodPrice" step="0.01"></div>
+          <div class="input-group"><label>Stock</label><input type="number" id="prodStock" value="0"></div>
+          <div class="input-group"><label>Date de péremption</label><input type="date" id="prodExpiration"></div>
+          <div class="input-group"><label>Catégorie</label><select id="prodCategory"></select></div>
+          <div class="input-group">
+            <label>Image du produit</label>
+            <input type="file" id="prodImage" accept="image/*">
+          </div>
+          <button class="btn btn-primary" id="saveProductBtn">Enregistrer</button>
+          <button class="btn btn-secondary" id="cancelProductBtn">Annuler</button>
+        </div>
+      </section>
+
+      <!-- Commandes -->
+      <section class="admin-section" id="section-orders">
+        <div class="flex-between mb-1">
+          <select id="orderStatusFilter" style="padding:0.4rem; border-radius:8px; background:var(--white); color:var(--text); border:1px solid var(--border);">
+            <option value="">Tous statuts</option>
+            <option value="pending_payment">En attente de paiement</option>
+            <option value="confirmed">Confirmée</option>
+            <option value="assigned">Assignée</option>
+            <option value="in_progress">En cours</option>
+            <option value="delivered">Livrée</option>
+          </select>
+          <button class="btn btn-sm btn-primary" id="refreshOrdersBtn"><i class="fas fa-sync-alt"></i></button>
+        </div>
+        <div class="table-wrapper">
+          <table><thead><tr><th>ID</th><th>Client</th><th>Statut</th><th>Livreur</th><th>Total</th><th>Actions</th><th>Temps restant</th></tr></thead><tbody id="ordersTable"></tbody></table>
+        </div>
+        <div id="orderDetailPanel" class="form-panel"></div>
+      </section>
+
+      <!-- Utilisateurs -->
+      <section class="admin-section" id="section-users">
+        <button class="btn btn-primary mb-1" id="showCreateUserBtn"><i class="fas fa-user-plus"></i> Créer livreur</button>
+        <div class="table-wrapper">
+          <table><thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Actif</th><th>Actions</th></tr></thead><tbody id="usersTable"></tbody></table>
+        </div>
+        <div id="createUserPanel" class="form-panel">
+          <div class="input-group"><label>Nom</label><input type="text" id="userName"></div>
+          <div class="input-group"><label>Email</label><input type="email" id="userEmail"></div>
+          <div class="input-group"><label>Mot de passe</label><input type="password" id="userPassword"></div>
+          <div class="input-group"><label>Téléphone</label><input type="text" id="userPhone"></div>
+          <div class="input-group"><label>WhatsApp</label><input type="text" id="userWhatsapp"></div>
+          <button class="btn btn-primary" id="saveUserBtn">Créer</button>
+          <button class="btn btn-secondary" id="cancelUserBtn">Annuler</button>
+        </div>
+      </section>
+
+      <!-- Carte -->
+      <section class="admin-section" id="section-map">
+        <div class="map-large" id="adminMap"></div>
+      </section>
+
+      <!-- 🕒 Créneaux de livraison -->
+      <section class="admin-section" id="section-slots">
+        <h3>🕒 Gestion des créneaux horaires</h3>
+        <div class="card" style="background:var(--white); padding:1rem; border-radius:12px; margin-bottom:1rem;">
+          <div class="input-group"><label>Heure début</label><input type="time" id="slotStart"></div>
+          <div class="input-group"><label>Heure fin</label><input type="time" id="slotEnd"></div>
+          <div class="input-group"><label>Commandes max</label><input type="number" id="slotMaxOrders" value="10" min="1"></div>
+          <div class="input-group"><label>Heure limite de commande</label><input type="time" id="slotDeadline"></div>
+          <button class="btn btn-primary" id="createSlotBtn">Ajouter ce créneau</button>
+        </div>
+        <div id="slotsList"></div>
+      </section>
+
+      <!-- Promos & Notifs -->
+      <section class="admin-section" id="section-promos">
+        <h3>🎉 Créer une promotion</h3>
+        <div class="card" style="background:var(--white); padding:1rem; border-radius:12px; margin-bottom:1rem;">
+          <div class="input-group">
+            <label>Sélectionner les produits</label>
+            <div class="checkbox-list" id="promoProductsCheckboxes">Chargement...</div>
+          </div>
+          <div class="input-group"><label>Réduction (%)</label><input type="number" id="promoDiscount" min="1" max="99" value="10"></div>
+          <div class="input-group"><label>Date de début</label><input type="datetime-local" id="promoStart"></div>
+          <div class="input-group"><label>Date de fin</label><input type="datetime-local" id="promoEnd"></div>
+          <div class="input-group">
+            <label>Image de l'offre (optionnel)</label>
+            <input type="file" id="promoImageFile" accept="image/*">
+          </div>
+          <button class="btn btn-primary" id="createPromoBtn">Créer la promotion</button>
+        </div>
+
+        <h3>📢 Envoyer une notification push</h3>
+        <div class="card" style="background:var(--white); padding:1rem; border-radius:12px; margin-bottom:1rem;">
+          <p>Abonnés aux notifications : <strong id="subscriberCount">0</strong></p>
+          <div class="input-group"><label>Titre</label><input type="text" id="notifTitle" placeholder="Offre spéciale !"></div>
+          <div class="input-group"><label>Message</label><textarea id="notifBody" rows="2" placeholder="Profitez de -20% sur les fruits ce week-end !"></textarea></div>
+          <button class="btn btn-orange" id="sendNotifBtn"><i class="fas fa-bell"></i> Envoyer la notification</button>
+        </div>
+
+        <h3>📋 Promotions actives</h3>
+        <div id="activePromosList"></div>
+      </section>
+
+      <!-- Litiges -->
+      <section class="admin-section" id="section-disputes">
+        <h3>Réclamations</h3>
+        <div id="disputesList" class="card" style="background:var(--white); padding:1rem; border-radius:12px;">Aucune réclamation.</div>
+      </section>
+    </div>
+  </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.socket.io/4.8.0/socket.io.min.js"></script>
+  <script>
+    const API_BASE = '/api';
+    const token = localStorage.getItem('token');
+    const userRole = localStorage.getItem('userRole');
+    if (!token || userRole !== 'admin') window.location.href = 'login.html';
+
+    let socket;
+    let adminMap;
+    let markersLayer;
+    let currentDetailOrderId;
+    let currentEditingProductId = null;
+    let countdownIntervals = {};
+    let allProductsForPromo = [];
+
+    // ==================== THÈME ====================
+    const themeBtn = document.getElementById('themeToggle');
+    const themeIcon = themeBtn.querySelector('i');
+    function applyTheme(mode) {
+      if (mode === 'dark') { document.body.classList.add('dark-mode'); themeIcon.className = 'fas fa-sun'; localStorage.setItem('theme', 'dark'); }
+      else if (mode === 'light') { document.body.classList.remove('dark-mode'); themeIcon.className = 'fas fa-moon'; localStorage.setItem('theme', 'light'); }
+      else { const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; document.body.classList.toggle('dark-mode', prefersDark); themeIcon.className = prefersDark ? 'fas fa-sun' : 'fas fa-moon'; localStorage.removeItem('theme'); }
+    }
+    themeBtn.addEventListener('click', () => { const current = localStorage.getItem('theme') || 'auto'; if (current === 'light') applyTheme('dark'); else if (current === 'dark') applyTheme('auto'); else applyTheme('light'); });
+    const savedTheme = localStorage.getItem('theme') || 'auto';
+    if (savedTheme === 'auto') { applyTheme('auto'); window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!localStorage.getItem('theme')) applyTheme('auto'); }); }
+    else applyTheme(savedTheme);
+
+    // ==================== SOCKET ====================
+    function connectSocket() {
+      if (socket && socket.connected) return;
+      if (socket) { socket.removeAllListeners(); socket.disconnect(); }
+      socket = io({ auth: { token }, reconnection: true, reconnectionAttempts: 5, reconnectionDelay: 2000 });
+      socket.on('connect', () => console.log('✅ Admin socket connecté'));
+      socket.on('connect_error', (err) => { if (err.message === 'Token invalide' || err.message === 'Token manquant') { socket.disconnect(); localStorage.clear(); window.location.href = 'login.html'; } });
+      socket.on('locationUpdate', updateMapMarker);
+      socket.on('notification', () => { playSound(); loadUnreadCount(); });
+      socket.on('disconnect', (reason) => console.log('❌ Socket déconnecté :', reason));
+    }
+    function playSound() { try { const ctx = new (window.AudioContext||window.webkitAudioContext)(); const osc = ctx.createOscillator(); osc.frequency.value=1000; osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime+0.15); } catch(e) {} }
+
+    // ==================== INIT ====================
+    function init() {
+      connectSocket();
+      loadDashboard();
+      setupNavigation();
+      loadUnreadCount();
+      document.getElementById('showProductFormBtn').addEventListener('click', () => openProductForm());
+      document.getElementById('saveProductBtn').addEventListener('click', saveProduct);
+      document.getElementById('cancelProductBtn').addEventListener('click', closeProductForm);
+      document.getElementById('showCreateUserBtn').addEventListener('click', toggleCreateUserPanel);
+      document.getElementById('saveUserBtn').addEventListener('click', createUser);
+      document.getElementById('cancelUserBtn').addEventListener('click', () => document.getElementById('createUserPanel').classList.remove('show'));
+      document.getElementById('refreshOrdersBtn').addEventListener('click', loadOrders);
+      document.getElementById('orderStatusFilter').addEventListener('change', loadOrders);
+      document.getElementById('createSlotBtn').addEventListener('click', createSlot);
+      document.getElementById('createPromoBtn').addEventListener('click', createPromo);
+      document.getElementById('sendNotifBtn').addEventListener('click', sendNotification);
+    }
+
+    function setupNavigation() {
+      document.querySelectorAll('.admin-nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.admin-nav-item').forEach(i => i.classList.remove('active'));
+          document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+          item.classList.add('active');
+          document.getElementById(`section-${item.dataset.section}`).classList.add('active');
+          if (item.dataset.section === 'products') loadProducts();
+          if (item.dataset.section === 'orders') loadOrders();
+          if (item.dataset.section === 'users') loadUsers();
+          if (item.dataset.section === 'map') initMap();
+          if (item.dataset.section === 'slots') loadSlots();
+          if (item.dataset.section === 'promos') loadPromos();
+          if (item.dataset.section === 'disputes') loadDisputes();
+        });
+      });
+    }
+
+    // ===== Dashboard =====
+    async function loadDashboard() {
+      try {
+        const [prodRes, orderRes, userRes, locRes] = await Promise.all([
+          fetch(`${API_BASE}/products?limit=1`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API_BASE}/orders?limit=100`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API_BASE}/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch(`${API_BASE}/locations`, { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+        const products = await prodRes.json();
+        const orders = await orderRes.json();
+        const users = await userRes.json();
+        const locations = await locRes.json();
+
+        const totalProducts = products.pagination?.total || 0;
+        const ordersList = orders.orders || [];
+        const totalOrders = ordersList.length;
+        const revenue = ordersList.reduce((s,o) => s + parseFloat(o.total_amount||0), 0);
+        const totalCustomers = (users.users||[]).filter(u => u.role === 'customer').length;
+
+        document.getElementById('dashboardStats').innerHTML = `
+          <div class="stat-card"><div class="stat-number">${totalProducts}</div><div class="stat-label">Produits</div></div>
+          <div class="stat-card"><div class="stat-number">${totalOrders}</div><div class="stat-label">Commandes</div></div>
+          <div class="stat-card"><div class="stat-number">${revenue.toLocaleString()}</div><div class="stat-label">CA (FCFA)</div></div>
+          <div class="stat-card"><div class="stat-number">${totalCustomers}</div><div class="stat-label">Clients</div></div>`;
+
+        const onlineDelivery = (locations.locations||[]).filter(l => l.role === 'delivery');
+        document.getElementById('onlineDeliveryList').innerHTML = onlineDelivery.length
+          ? onlineDelivery.map(d => `<span class="badge-status status-in_progress">${d.name} (${Number(d.lat).toFixed(2)}, ${Number(d.lng).toFixed(2)})</span>`).join(' ')
+          : 'Aucun livreur en ligne.';
+
+        document.getElementById('recentOrders').innerHTML = ordersList.slice(0,5).map(o => `
+          <div class="card flex-between" style="background:var(--white); padding:0.8rem; border-radius:12px; margin-bottom:0.5rem;">
+            <div>#${o.id.substring(0,8)} - ${o.customer_name||'?'} - ${o.status}</div>
+            <div>${o.total_amount} FCFA</div>
+          </div>
+        `).join('');
+      } catch(e) { console.error(e); }
+    }
+
+    // ===== Produits (avec upload image) =====
+    async function loadProducts() {
+      const res = await fetch(`${API_BASE}/products?limit=200`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      document.getElementById('productsTable').innerHTML = (data.products||[]).map(p => `
+        <tr>
+          <td>${p.image_url ? `<img src="${p.image_url}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;">` : '—'}</td>
+          <td>${p.name}</td><td>${p.price}</td><td>${p.stock}</td><td>${p.expiration?p.expiration.substring(0,10):'N/A'}</td>
+          <td>
+            <button class="btn btn-sm btn-secondary edit-product" data-id="${p.id}"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-sm btn-danger delete-product" data-id="${p.id}"><i class="fas fa-trash"></i></button>
+          </td>
+        </tr>`).join('');
+      document.querySelectorAll('.edit-product').forEach(b => b.addEventListener('click', () => editProduct(b.dataset.id)));
+      document.querySelectorAll('.delete-product').forEach(b => b.addEventListener('click', () => deleteProduct(b.dataset.id)));
+    }
+
+    async function openProductForm(product = null) {
+      currentEditingProductId = product ? product.id : null;
+      document.getElementById('productFormTitle').textContent = product ? 'Modifier produit' : 'Nouveau produit';
+      document.getElementById('prodName').value = product?.name || '';
+      document.getElementById('prodDesc').value = product?.description || '';
+      document.getElementById('prodPrice').value = product?.price || '';
+      document.getElementById('prodStock').value = product?.stock || 0;
+      document.getElementById('prodExpiration').value = product?.expiration ? product.expiration.substring(0,10) : '';
+      const catRes = await fetch(`${API_BASE}/products/categories/all`);
+      const cats = (await catRes.json()).categories || [];
+      document.getElementById('prodCategory').innerHTML = cats.map(c => `<option value="${c.id}" ${product?.category_id===c.id?'selected':''}>${c.name}</option>`).join('');
+      document.getElementById('prodImage').value = '';
+      document.getElementById('productFormPanel').classList.add('show');
+      document.getElementById('productFormPanel').scrollIntoView({ behavior: 'smooth' });
+    }
+    function closeProductForm() { document.getElementById('productFormPanel').classList.remove('show'); }
+    async function editProduct(id) {
+      const res = await fetch(`${API_BASE}/products/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      openProductForm(data.product);
+    }
+    async function deleteProduct(id) {
+      if (!confirm('Supprimer ce produit ?')) return;
+      await fetch(`${API_BASE}/products/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`}});
+      loadProducts();
+    }
+    async function saveProduct() {
+      const formData = new FormData();
+      formData.append('name', document.getElementById('prodName').value);
+      formData.append('description', document.getElementById('prodDesc').value);
+      formData.append('price', document.getElementById('prodPrice').value);
+      formData.append('stock', document.getElementById('prodStock').value);
+      formData.append('expiration', document.getElementById('prodExpiration').value || '');
+      formData.append('category_id', document.getElementById('prodCategory').value || '');
+      const fileInput = document.getElementById('prodImage');
+      if (fileInput.files.length > 0) formData.append('image', fileInput.files[0]);
+      const url = currentEditingProductId ? `${API_BASE}/products/${currentEditingProductId}` : `${API_BASE}/products`;
+      const method = currentEditingProductId ? 'PUT' : 'POST';
+      try {
+        const res = await fetch(url, { method, headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+        if (!res.ok) { const err = await res.json(); alert(err.error); return; }
+        closeProductForm(); loadProducts(); loadDashboard();
+      } catch(e) { alert('Erreur: ' + e.message); }
+    }
+
+    // ===== Commandes avec timer et confirmation de paiement =====
+    function parseSlot(slot) { if (!slot) return null; const match = slot.match(/\["?([^"]+)"?,\s*"?([^"]+)"?\)/); if (!match) return null; return { start: new Date(match[1]), end: new Date(match[2]) }; }
+    function getRemainingSeconds(end) { const diff = end - new Date(); return diff > 0 ? Math.floor(diff / 1000) : 0; }
+    function formatTime(seconds) { if (seconds <= 0) return '0s'; const h = Math.floor(seconds / 3600); const m = Math.floor((seconds % 3600) / 60); const s = seconds % 60; return `${h > 0 ? h + 'h ' : ''}${m > 0 ? m + 'm ' : ''}${s}s`; }
+    function updateTimer(el, end) { const remaining = getRemainingSeconds(end); el.textContent = remaining > 0 ? formatTime(remaining) : 'Dépassé'; el.style.color = remaining > 0 ? 'var(--orange)' : 'var(--red)'; }
+
+    async function loadOrders() {
+      const status = document.getElementById('orderStatusFilter').value;
+      const res = await fetch(`${API_BASE}/orders?limit=100${status ? '&status='+status : ''}`, { headers:{'Authorization':`Bearer ${token}`}});
+      const data = await res.json();
+      const orders = data.orders || [];
+      Object.keys(countdownIntervals).forEach(clearInterval);
+      countdownIntervals = {};
+      document.getElementById('ordersTable').innerHTML = orders.map(o => {
+        const slotInfo = parseSlot(o.delivery_slot);
+        const remaining = slotInfo ? getRemainingSeconds(slotInfo.end) : -1;
+        const timerId = `timer-${o.id}`;
+        return `
+          <tr>
+            <td>${o.id.substring(0,8)}</td><td>${o.customer_name||'?'}</td>
+            <td><span class="badge-status status-${o.status}">${o.status}</span>${o.transaction_code ? `<br><small>Code: ${o.transaction_code}</small>` : ''}</td>
+            <td>${o.delivery_name||'Non assigné'}</td><td>${o.total_amount} FCFA</td>
+            <td><button class="btn btn-sm btn-secondary view-order-detail" data-id="${o.id}">Détails</button></td>
+            <td><span id="${timerId}" class="countdown">${remaining >= 0 ? formatTime(remaining) : '—'}</span></td>
+          </tr>`;
+      }).join('');
+      document.querySelectorAll('.view-order-detail').forEach(b => b.addEventListener('click', (e) => showOrderDetailPanel(e.target.dataset.id)));
+      orders.forEach(o => {
+        const slotInfo = parseSlot(o.delivery_slot);
+        if (slotInfo && o.status !== 'delivered' && o.status !== 'cancelled' && o.status !== 'returned') {
+          const timerEl = document.getElementById(`timer-${o.id}`);
+          if (timerEl) { updateTimer(timerEl, slotInfo.end); countdownIntervals[o.id] = setInterval(() => updateTimer(timerEl, slotInfo.end), 1000); }
+        }
+      });
+    }
+
+    async function showOrderDetailPanel(orderId) {
+      currentDetailOrderId = orderId;
+      const res = await fetch(`${API_BASE}/orders/${orderId}`, { headers:{'Authorization':`Bearer ${token}`}});
+      const data = await res.json();
+      const o = data.order;
+      const deliveryList = await getDeliveryList();
+      const slotInfo = parseSlot(o.delivery_slot);
+      const remaining = slotInfo ? getRemainingSeconds(slotInfo.end) : -1;
+
+      const panel = document.getElementById('orderDetailPanel');
+      panel.innerHTML = `
+        <h4>Commande #${o.id.substring(0,8)}</h4>
+        <p><strong>Client:</strong> ${o.customer_name} (${o.customer_phone||''})</p>
+        <p><strong>Adresse:</strong> ${o.full_address||o.address_label}</p>
+        <p><strong>Créneau:</strong> ${slotInfo ? `${slotInfo.start.toLocaleTimeString('fr-FR')} - ${slotInfo.end.toLocaleTimeString('fr-FR')}` : 'N/A'} <span id="detail-timer" class="countdown">${remaining >= 0 ? formatTime(remaining) : '—'}</span></p>
+        <p><strong>Paiement:</strong> ${o.payment_method} ${o.payment_phone||''}</p>
+        ${o.transaction_code ? `<p><strong>Code transaction:</strong> ${o.transaction_code}</p>` : ''}
+        <p><strong>Total:</strong> ${o.total_amount} FCFA</p>
+        <p><strong>Statut actuel :</strong> ${o.status}</p>
+        ${o.status === 'pending_payment' ? `
+          <button class="btn btn-orange mt-1" id="confirmPaymentBtn">Confirmer le paiement</button>
+        ` : ''}
+        <div class="input-group" ${o.status !== 'confirmed' ? 'style="display:none;"' : ''}>
+          <label>Assigner un livreur</label>
+          <select id="deliverySelect">${deliveryList.map(d => `<option value="${d.id}" ${d.id===o.delivery_person_id?'selected':''}>${d.name}</option>`).join('')}</select>
+          <button class="btn btn-sm btn-primary mt-1" id="assignDeliveryBtn">Assigner</button>
+        </div>
+        <div class="input-group">
+          <label>Changer statut</label>
+          <select id="statusSelect">
+            <option value="pending_payment" ${o.status==='pending_payment'?'selected':''}>En attente de paiement</option>
+            <option value="confirmed" ${o.status==='confirmed'?'selected':''}>Confirmée</option>
+            <option value="assigned" ${o.status==='assigned'?'selected':''}>Assignée</option>
+            <option value="in_progress" ${o.status==='in_progress'?'selected':''}>En cours</option>
+            <option value="delivered" ${o.status==='delivered'?'selected':''}>Livrée</option>
+            <option value="cancelled" ${o.status==='cancelled'?'selected':''}>Annulée</option>
+            <option value="returned" ${o.status==='returned'?'selected':''}>Retournée</option>
+          </select>
+          <button class="btn btn-sm btn-orange mt-1" id="updateStatusBtn">Modifier statut</button>
+        </div>`;
+      panel.classList.add('show'); panel.scrollIntoView({ behavior: 'smooth' });
+
+      const confirmBtn = document.getElementById('confirmPaymentBtn');
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+          if (!confirm('Confirmer le paiement de cette commande ?')) return;
+          await fetch(`${API_BASE}/orders/${orderId}/confirm-payment`, {
+            method:'PUT',
+            headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}
+          });
+          panel.classList.remove('show');
+          loadOrders();
+        });
+      }
+
+      document.getElementById('assignDeliveryBtn')?.addEventListener('click', assignDelivery);
+      document.getElementById('updateStatusBtn')?.addEventListener('click', updateOrderStatus);
+
+      if (slotInfo && o.status !== 'delivered' && o.status !== 'cancelled' && o.status !== 'returned') {
+        const detailTimer = document.getElementById('detail-timer');
+        if (detailTimer) { updateTimer(detailTimer, slotInfo.end); const interval = setInterval(() => updateTimer(detailTimer, slotInfo.end), 1000); panel.addEventListener('transitionend', () => clearInterval(interval), { once: true }); }
+      }
+    }
+
+    async function getDeliveryList() {
+      const res = await fetch(`${API_BASE}/users?role=delivery`, { headers:{'Authorization':`Bearer ${token}`}});
+      const data = await res.json();
+      return data.users || [];
+    }
+    async function assignDelivery() {
+      const deliveryId = document.getElementById('deliverySelect').value;
+      await fetch(`${API_BASE}/orders/${currentDetailOrderId}/assign`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({ delivery_person_id: deliveryId }) });
+      loadOrders(); document.getElementById('orderDetailPanel').classList.remove('show');
+    }
+    async function updateOrderStatus() {
+      const status = document.getElementById('statusSelect').value;
+      await fetch(`${API_BASE}/orders/${currentDetailOrderId}/status`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({ status }) });
+      loadOrders(); document.getElementById('orderDetailPanel').classList.remove('show');
+    }
+
+    // ===== Utilisateurs =====
+    function toggleCreateUserPanel() { const panel = document.getElementById('createUserPanel'); panel.classList.toggle('show'); if (panel.classList.contains('show')) panel.scrollIntoView({ behavior: 'smooth' }); }
+    async function createUser() {
+      const payload = { name: document.getElementById('userName').value, email: document.getElementById('userEmail').value, password: document.getElementById('userPassword').value, role: 'delivery', phone: document.getElementById('userPhone').value, whatsapp: document.getElementById('userWhatsapp').value };
+      await fetch(`${API_BASE}/auth/register`, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify(payload) });
+      document.getElementById('createUserPanel').classList.remove('show'); loadUsers();
+    }
+    async function loadUsers() {
+      const res = await fetch(`${API_BASE}/users`, { headers:{'Authorization':`Bearer ${token}`}});
+      const data = await res.json();
+      document.getElementById('usersTable').innerHTML = (data.users||[]).map(u => `
+        <tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${u.is_active ? '✅' : '❌'}</td>
+        <td><button class="btn btn-sm btn-secondary toggle-user" data-id="${u.id}" data-active="${u.is_active}">${u.is_active?'Désactiver':'Activer'}</button>
+        <button class="btn btn-sm btn-danger delete-user" data-id="${u.id}"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+      document.querySelectorAll('.toggle-user').forEach(b => b.addEventListener('click', async ()=>{
+        const active = b.dataset.active === 'true';
+        await fetch(`${API_BASE}/users/${b.dataset.id}/status`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({ is_active: !active }) }); loadUsers();
+      }));
+      document.querySelectorAll('.delete-user').forEach(b => b.addEventListener('click', async ()=>{ if (!confirm('Supprimer cet utilisateur ?')) return; await fetch(`${API_BASE}/users/${b.dataset.id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`}}); loadUsers(); }));
+    }
+
+    // ===== Carte =====
+    function initMap() { if (adminMap) { adminMap.invalidateSize(); return; } adminMap = L.map('adminMap').setView([6.3703, 2.3912], 12); L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(adminMap); markersLayer = L.layerGroup().addTo(adminMap); loadMapData(); }
+    async function loadMapData() { const res = await fetch(`${API_BASE}/locations`, { headers:{'Authorization':`Bearer ${token}`}}); const data = await res.json(); (data.locations||[]).forEach(addMarker); }
+    function addMarker(loc) { if (!markersLayer) return; const marker = L.circleMarker([loc.lat, loc.lng], { radius: 8, color: 'blue', fillColor: 'blue', fillOpacity: 0.6 }); marker.bindPopup(`<strong>${loc.name}</strong><br><a href="https://wa.me/${loc.whatsapp||''}" target="_blank">WhatsApp</a>`); marker.userId = loc.user_id; markersLayer.addLayer(marker); }
+    function updateMapMarker(data) { if (!markersLayer) return; markersLayer.eachLayer(layer => { if (layer.userId === data.user_id) layer.setLatLng([data.lat, data.lng]); }); }
+
+    // ===== Litiges =====
+    async function loadDisputes() { const res = await fetch(`${API_BASE}/orders?status=returned`, { headers:{'Authorization':`Bearer ${token}`}}); const data = await res.json(); const disputed = (data.orders||[]).filter(o => o.problem_reported); document.getElementById('disputesList').innerHTML = disputed.length ? disputed.map(o => `<div class="card" style="background:var(--white); padding:0.8rem; border-radius:12px; margin-bottom:0.5rem;"><strong>#${o.id.substring(0,8)}</strong> - ${o.problem_details||'Sans détails'}</div>`).join('') : 'Aucune réclamation.'; }
+
+    // ===== Créneaux de livraison (avec order_deadline) =====
+    async function loadSlots() {
+      const res = await fetch(`${API_BASE}/delivery-slots/all`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      const slots = data.slots || [];
+      const container = document.getElementById('slotsList');
+      container.innerHTML = slots.length ? slots.map(s => `
+        <div class="card flex-between" style="background:var(--white); padding:0.8rem; border-radius:12px; margin-bottom:0.5rem;">
+          <div>
+            ${s.start_time.substring(0,5)} – ${s.end_time.substring(0,5)} (max ${s.max_orders}) ${s.is_active ? '✅' : '❌'}
+            ${s.order_deadline ? `<br><small>Limite commande : ${s.order_deadline.substring(0,5)}</small>` : ''}
+          </div>
+          <div>
+            <button class="btn btn-sm btn-secondary toggle-slot" data-id="${s.id}" data-active="${s.is_active}">${s.is_active ? 'Désactiver' : 'Activer'}</button>
+            <button class="btn btn-sm btn-danger delete-slot" data-id="${s.id}"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>`).join('') : '<p>Aucun créneau.</p>';
+      document.querySelectorAll('.toggle-slot').forEach(b => b.addEventListener('click', async (e) => {
+        const id = e.currentTarget.dataset.id; const active = e.currentTarget.dataset.active === 'true';
+        await fetch(`${API_BASE}/delivery-slots/${id}`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({ is_active: !active }) }); loadSlots();
+      }));
+      document.querySelectorAll('.delete-slot').forEach(b => b.addEventListener('click', async (e) => {
+        if (!confirm('Supprimer ce créneau ?')) return;
+        await fetch(`${API_BASE}/delivery-slots/${e.currentTarget.dataset.id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} }); loadSlots();
+      }));
+    }
+
+    async function createSlot() {
+      const start_time = document.getElementById('slotStart').value;
+      const end_time = document.getElementById('slotEnd').value;
+      const max_orders = document.getElementById('slotMaxOrders').value;
+      const order_deadline = document.getElementById('slotDeadline').value;
+      if (!start_time || !end_time) return alert('Heures début et fin requises');
+      await fetch(`${API_BASE}/delivery-slots`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+        body: JSON.stringify({ start_time, end_time, max_orders, order_deadline: order_deadline || null })
+      });
+      loadSlots();
+    }
+
+    // ===== Promos & Notifs =====
+    async function loadPromos() {
+      try {
+        const res = await fetch(`${API_BASE}/products?limit=200`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json(); allProductsForPromo = data.products || [];
+        document.getElementById('promoProductsCheckboxes').innerHTML = allProductsForPromo.map(p => `<label><input type="checkbox" value="${p.id}"> ${p.name} (${p.price} FCFA)</label>`).join('');
+      } catch(e) {}
+      try {
+        const res = await fetch(`${API_BASE}/special-offers`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json(); const offers = data.offers || [];
+        document.getElementById('activePromosList').innerHTML = offers.length ? offers.map(o => {
+          const productNames = (o.products || []).map(p => p.name).join(', ');
+          return `<div class="card" style="background:var(--white); padding:0.8rem; border-radius:12px; margin-bottom:0.5rem;"><div class="flex-between"><div><strong>-${o.discount_percent}%</strong> sur : ${productNames || 'Aucun produit'}<br><small>Du ${new Date(o.start_date).toLocaleDateString('fr-FR')} au ${new Date(o.end_date).toLocaleDateString('fr-FR')}</small>${o.image_url ? `<br><img src="${o.image_url}" style="max-width:100px; max-height:60px; margin-top:0.3rem; border-radius:6px;">` : ''}</div><div><button class="btn btn-sm btn-danger deactivate-promo" data-id="${o.id}">Désactiver</button><button class="btn btn-sm btn-danger delete-promo" data-id="${o.id}"><i class="fas fa-trash"></i></button></div></div></div>`;
+        }).join('') : '<p>Aucune promotion active.</p>';
+        document.querySelectorAll('.deactivate-promo').forEach(btn => btn.addEventListener('click', async (e) => { await fetch(`${API_BASE}/special-offers/${e.currentTarget.dataset.id}`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({ is_active: false }) }); loadPromos(); }));
+        document.querySelectorAll('.delete-promo').forEach(btn => btn.addEventListener('click', async (e) => { if (!confirm('Supprimer cette promotion ?')) return; await fetch(`${API_BASE}/special-offers/${e.currentTarget.dataset.id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} }); loadPromos(); }));
+      } catch(e) {}
+      try {
+        const res = await fetch(`${API_BASE}/notifications/subscribers`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json(); document.getElementById('subscriberCount').textContent = data.count || 0;
+      } catch(e) {}
+    }
+
+    async function createPromo() {
+      const checkboxes = document.querySelectorAll('#promoProductsCheckboxes input[type="checkbox"]:checked');
+      const product_ids = []; checkboxes.forEach(cb => product_ids.push(cb.value));
+      const discount_percent = parseInt(document.getElementById('promoDiscount').value);
+      let start_date = null, end_date = null;
+      if (document.getElementById('promoStart').value) { const d = new Date(document.getElementById('promoStart').value); if (!isNaN(d)) start_date = d.toISOString(); }
+      if (document.getElementById('promoEnd').value) { const d = new Date(document.getElementById('promoEnd').value); if (!isNaN(d)) end_date = d.toISOString(); }
+      if (product_ids.length === 0 || !discount_percent || !end_date) return alert('Sélectionnez au moins un produit et remplissez % et date de fin.');
+      const formData = new FormData();
+      product_ids.forEach(id => formData.append('product_ids', id));
+      formData.append('discount_percent', discount_percent);
+      if (start_date) formData.append('start_date', start_date);
+      formData.append('end_date', end_date);
+      const fileInput = document.getElementById('promoImageFile');
+      if (fileInput.files.length > 0) formData.append('image', fileInput.files[0]);
+      try {
+        const res = await fetch(`${API_BASE}/special-offers`, { method:'POST', headers:{'Authorization':`Bearer ${token}`}, body: formData });
+        if (res.ok) { alert('Promotion créée !'); loadPromos(); document.querySelectorAll('#promoProductsCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false); document.getElementById('promoDiscount').value = 10; document.getElementById('promoStart').value = ''; document.getElementById('promoEnd').value = ''; fileInput.value = ''; }
+        else { const err = await res.json(); alert(err.error); }
+      } catch(e) { alert('Erreur: ' + e.message); }
+    }
+
+    async function sendNotification() {
+      const title = document.getElementById('notifTitle').value.trim();
+      const body = document.getElementById('notifBody').value.trim();
+      if (!title || !body) return alert('Titre et message requis');
+      try {
+        const res = await fetch(`${API_BASE}/notifications/send`, { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({ title, body, url: '/products.html' }) });
+        const data = await res.json(); alert(`Notification envoyée à ${data.sent} personne(s). ${data.failed > 0 ? data.failed + ' échec(s).' : ''}`);
+        document.getElementById('notifTitle').value = ''; document.getElementById('notifBody').value = '';
+      } catch(e) {}
+    }
+
+    async function loadUnreadCount() {
+      const res = await fetch(`${API_BASE}/messages/conversations`, { headers:{'Authorization':`Bearer ${token}`}});
+      const data = await res.json();
+      const total = (data.conversations||[]).reduce((s,c)=>s+(c.unread_count||0), 0);
+      const badge = document.getElementById('messageBadge');
+      badge.style.display = total > 0 ? 'flex' : 'none'; badge.textContent = total;
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
+    init();
+  </script>
+</body>
+</html>

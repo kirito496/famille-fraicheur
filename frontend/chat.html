@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Famille & Fraîcheur – Chat</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    .chat-layout {
+      display: flex;
+      height: calc(100vh - 130px);
+      background: var(--white);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin: 0 1rem;
+    }
+    .conversation-list {
+      width: 35%;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      background: #fafafa;
+    }
+    .conversation-item {
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+    }
+    .conversation-item:hover, .conversation-item.active {
+      background: #e8f5e9;
+    }
+    .conversation-item .unread-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--orange);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .conversation-item .conv-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .conversation-item .conv-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .conversation-item .conv-last {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+    }
+    .chat-header {
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      background: #f9f9f9;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .chat-bubble {
+      max-width: 70%;
+      padding: 0.6rem 1rem;
+      border-radius: 18px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+    .chat-bubble-left {
+      align-self: flex-start;
+      background: #e8f5e9;
+      border-bottom-left-radius: 4px;
+    }
+    .chat-bubble-right {
+      align-self: flex-end;
+      background: var(--green);
+      color: var(--white);
+      border-bottom-right-radius: 4px;
+    }
+    .chat-input-area {
+      display: flex;
+      padding: 0.8rem;
+      border-top: 1px solid var(--border);
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .chat-input-area input {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.6rem 1rem;
+      font-size: 0.9rem;
+    }
+    .empty-chat {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-light);
+    }
+    @media (max-width: 768px) {
+      .chat-layout {
+        flex-direction: column;
+        height: calc(100vh - 120px);
+        margin: 0;
+        border-radius: 0;
+      }
+      .conversation-list {
+        width: 100%;
+        height: 40%;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .chat-area {
+        height: 60%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h2>💬 Messages</h2>
+    <button class="btn btn-sm btn-secondary" id="backBtn"><i class="fas fa-arrow-left"></i> Retour</button>
+  </div>
+
+  <div class="chat-layout">
+    <!-- Liste conversations -->
+    <div class="conversation-list" id="conversationList">
+      <p style="padding:1rem;">Chargement...</p>
+    </div>
+
+    <!-- Zone discussion -->
+    <div class="chat-area">
+      <div class="chat-header" id="chatHeader">Sélectionnez une conversation</div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="empty-chat">Aucune conversation sélectionnée</div>
+      </div>
+      <div class="chat-input-area" id="chatInputArea" style="display:none;">
+        <input type="text" id="messageInput" placeholder="Votre message...">
+        <button class="btn btn-primary btn-sm" id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="mobile-nav">
+    <a href="products.html"><i class="fas fa-store"></i><span>Boutique</span></a>
+    <a href="account.html"><i class="fas fa-user"></i><span>Compte</span></a>
+    <a href="chat.html" class="active"><i class="fas fa-comments"></i><span>Chat</span></a>
+  </nav>
+
+  <script src="https://cdn.socket.io/4.8.0/socket.io.min.js"></script>
+  <script>
+    const API_BASE = '/api';
+    const token = localStorage.getItem('token');
+    const userRole = localStorage.getItem('userRole');
+    const userId = localStorage.getItem('userId');
+    if (!token) window.location.href = 'login.html';
+
+    let socket;
+    let conversations = [];
+    let activeOrderId = null;
+    let messagesCache = {};
+
+    // Retour page précédente selon rôle
+    document.getElementById('backBtn').addEventListener('click', () => {
+      const pages = { admin: 'admin.html', delivery: 'livreur.html', customer: 'products.html' };
+      window.location.href = pages[userRole] || 'login.html';
+    });
+
+    // Initialisation
+    async function init() {
+      connectSocket();
+      await loadConversations();
+      // Ouvrir automatiquement une conversation si ?order=... dans l'URL
+      const params = new URLSearchParams(window.location.search);
+      const orderParam = params.get('order');
+      if (orderParam) {
+        openConversation(orderParam);
+      }
+    }
+
+    function connectSocket() {
+      socket = io({ auth: { token } });
+      socket.on('connect', () => console.log('Socket chat connecté'));
+      socket.on('newMessage', (message) => {
+        // Si le message concerne la conversation active, l'ajouter
+        if (message.order_id === activeOrderId) {
+          addMessageToUI(message);
+          scrollToBottom();
+          markConversationRead(message.order_id);
+        }
+        // Recharger les conversations pour mettre à jour le dernier message
+        loadConversations();
+      });
+      socket.on('notification', (data) => {
+        if (data.type === 'message') {
+          loadConversations();
+        }
+      });
+    }
+
+    async function loadConversations() {
+      try {
+        const res = await fetch(`${API_BASE}/messages/conversations`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        conversations = data.conversations || [];
+        renderConversations();
+      } catch (err) {
+        console.error('Erreur chargement conversations', err);
+      }
+    }
+
+    function renderConversations() {
+      const container = document.getElementById('conversationList');
+      if (!conversations.length) {
+        container.innerHTML = '<p style="padding:1rem;">Aucune conversation</p>';
+        return;
+      }
+
+      container.innerHTML = conversations.map(conv => {
+        const unreadClass = conv.unread_count > 0 ? '' : 'style="display:none"';
+        const activeClass = conv.order_id === activeOrderId ? 'active' : '';
+        const otherName = conv.other_party_name || conv.customer_name || 'Inconnu';
+        return `
+          <div class="conversation-item ${activeClass}" data-order-id="${conv.order_id}">
+            <span class="unread-dot" ${conv.unread_count > 0 ? '' : 'style="display:none"'}></span>
+            <div class="conv-info">
+              <div class="conv-name">${otherName} <span style="font-size:0.7rem; color:var(--text-light);">#${conv.order_id.substring(0,6)}</span></div>
+              <div class="conv-last">${conv.last_message || ''}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      // Attacher événements de clic
+      document.querySelectorAll('.conversation-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const orderId = item.dataset.orderId;
+          openConversation(orderId);
+        });
+      });
+    }
+
+    async function openConversation(orderId) {
+      activeOrderId = orderId;
+      // Mise en évidence dans la liste
+      document.querySelectorAll('.conversation-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.orderId === orderId);
+      });
+
+      // Afficher l'interface de chat
+      document.getElementById('chatInputArea').style.display = 'flex';
+      document.getElementById('chatHeader').textContent = `Commande #${orderId.substring(0,8)}`;
+      document.getElementById('chatMessages').innerHTML = '';
+
+      // Charger les messages
+      try {
+        const res = await fetch(`${API_BASE}/messages/${orderId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        messagesCache[orderId] = data.messages || [];
+        renderMessages(messagesCache[orderId]);
+        scrollToBottom();
+        // Marquer comme lus
+        markConversationRead(orderId);
+      } catch (err) {
+        console.error('Erreur chargement messages', err);
+      }
+
+      // Mettre à jour le badge non lu dans la liste
+      const conv = conversations.find(c => c.order_id === orderId);
+      if (conv) conv.unread_count = 0;
+      renderConversations();
+    }
+
+    function renderMessages(messages) {
+      const container = document.getElementById('chatMessages');
+      if (!messages || messages.length === 0) {
+        container.innerHTML = '<div class="empty-chat">Aucun message</div>';
+        return;
+      }
+      container.innerHTML = messages.map(msg => {
+        const isMine = msg.sender_id === userId;
+        const bubbleClass = isMine ? 'chat-bubble-right' : 'chat-bubble-left';
+        return `<div class="chat-bubble ${bubbleClass}">
+                  <div style="font-size:0.7rem; opacity:0.8;">${msg.sender_name}</div>
+                  ${msg.content}
+                </div>`;
+      }).join('');
+    }
+
+    function addMessageToUI(msg) {
+      const container = document.getElementById('chatMessages');
+      if (container.querySelector('.empty-chat')) container.innerHTML = '';
+      const isMine = msg.sender_id === userId;
+      const bubbleClass = isMine ? 'chat-bubble-right' : 'chat-bubble-left';
+      const bubble = document.createElement('div');
+      bubble.className = `chat-bubble ${bubbleClass}`;
+      bubble.innerHTML = `<div style="font-size:0.7rem; opacity:0.8;">${msg.sender_name}</div>${msg.content}`;
+      container.appendChild(bubble);
+    }
+
+    function scrollToBottom() {
+      const container = document.getElementById('chatMessages');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    async function markConversationRead(orderId) {
+      try {
+        // Marquer comme lus via API REST
+        await fetch(`${API_BASE}/messages/read`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ order_id: orderId })
+        });
+        // Émettre aussi via socket si possible
+        if (socket && socket.connected) {
+          socket.emit('markRead', orderId);
+        }
+      } catch (err) {
+        console.error('Erreur markRead', err);
+      }
+    }
+
+    // Envoi message
+    document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
+    document.getElementById('messageInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const content = input.value.trim();
+      if (!content || !activeOrderId) return;
+
+      try {
+        // Envoi via socket si connecté, sinon fallback REST
+        if (socket && socket.connected) {
+          socket.emit('sendMessage', { order_id: activeOrderId, content }, (response) => {
+            if (response && response.success) {
+              input.value = '';
+              // Le message sera ajouté via l'événement newMessage
+            } else {
+              alert('Erreur envoi message');
+            }
+          });
+        } else {
+          // Fallback REST
+          const res = await fetch(`${API_BASE}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ order_id: activeOrderId, content })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            input.value = '';
+            // Ajouter le message directement dans l'UI
+            addMessageToUI({ ...data.message, sender_name: localStorage.getItem('userName') || 'Moi' });
+            scrollToBottom();
+          }
+        }
+      } catch (err) {
+        console.error('Erreur sendMessage', err);
+      }
+    }
+
+    // Redimensionnement responsive : si mobile, peut-être cacher la liste après sélection
+    function handleMobileDisplay() {
+      if (window.innerWidth <= 768 && activeOrderId) {
+        document.querySelector('.conversation-list').style.display = 'none';
+        document.getElementById('backToListBtn')?.remove();
+        const backBtn = document.createElement('button');
+        backBtn.id = 'backToListBtn';
+        backBtn.className = 'btn btn-sm btn-secondary';
+        backBtn.innerHTML = '<i class="fas fa-arrow-left"></i> Conversations';
+        backBtn.style.margin = '0.5rem';
+        backBtn.addEventListener('click', () => {
+          document.querySelector('.conversation-list').style.display = 'block';
+          backBtn.remove();
+          activeOrderId = null;
+          document.getElementById('chatInputArea').style.display = 'none';
+          document.getElementById('chatHeader').textContent = 'Sélectionnez une conversation';
+          document.getElementById('chatMessages').innerHTML = '<div class="empty-chat">Aucune conversation sélectionnée</div>';
+        });
+        document.querySelector('.chat-area').insertBefore(backBtn, document.querySelector('.chat-header'));
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 768) {
+        document.querySelector('.conversation-list').style.display = '';
+        document.getElementById('backToListBtn')?.remove();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

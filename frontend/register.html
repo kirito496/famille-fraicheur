@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Famille & Fraîcheur – Créer un compte</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    .login-wrapper {
+      display: flex; min-height: 100vh; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .login-card {
+      width: 100%; max-width: 420px; background: var(--white); border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12); padding: 2.5rem 2rem; text-align: center;
+    }
+    .login-logo { font-size: 3rem; margin-bottom: 0.5rem; }
+    .login-title { font-size: 1.4rem; font-weight: 700; color: var(--green); margin-bottom: 0.2rem; }
+    .login-subtitle { color: var(--text-light); font-size: 0.95rem; margin-bottom: 2rem; }
+    .login-error { background: #ffebee; color: #D32F2F; padding: 0.6rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+    .login-error.show { display: block; }
+    .info-message { background: #e8f5e9; color: #2E7D32; padding: 0.6rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+    .info-message.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="login-logo">🥬</div>
+      <h1 class="login-title">Créer un compte</h1>
+      <p class="login-subtitle">Rejoignez Famille & Fraîcheur</p>
+
+      <div class="login-error" id="errorMsg"></div>
+      <div class="info-message" id="successMsg"></div>
+
+      <form id="registerForm">
+        <div class="input-group">
+          <label for="name"><i class="fas fa-user"></i> Nom complet</label>
+          <input type="text" id="name" name="name" placeholder="Votre nom" required>
+        </div>
+        <div class="input-group">
+          <label for="email"><i class="fas fa-envelope"></i> Email</label>
+          <input type="email" id="email" name="email" placeholder="votre@email.com" required>
+        </div>
+        <div class="input-group">
+          <label for="phone"><i class="fas fa-phone"></i> Téléphone</label>
+          <input type="text" id="phone" name="phone" placeholder="Ex: 97 12 34 56">
+        </div>
+        <div class="input-group">
+          <label for="password"><i class="fas fa-lock"></i> Mot de passe</label>
+          <input type="password" id="password" name="password" placeholder="Minimum 6 caractères" required minlength="6">
+        </div>
+        <div class="input-group">
+          <label for="confirmPassword"><i class="fas fa-lock"></i> Confirmer</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Répéter le mot de passe" required minlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block mt-2">
+          <i class="fas fa-user-plus"></i> Créer mon compte
+        </button>
+      </form>
+
+      <p style="margin-top: 1.5rem; font-size: 0.9rem;">
+        Déjà un compte ? <a href="login.html">Se connecter</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      const errorDiv = document.getElementById('errorMsg');
+      const successDiv = document.getElementById('successMsg');
+
+      errorDiv.classList.remove('show');
+      errorDiv.textContent = '';
+      successDiv.classList.remove('show');
+      successDiv.textContent = '';
+
+      // Validation simple
+      if (!name || !email || !password) {
+        errorDiv.textContent = 'Nom, email et mot de passe sont obligatoires.';
+        errorDiv.classList.add('show');
+        return;
+      }
+      if (password !== confirmPassword) {
+        errorDiv.textContent = 'Les mots de passe ne correspondent pas.';
+        errorDiv.classList.add('show');
+        return;
+      }
+      if (password.length < 6) {
+        errorDiv.textContent = 'Le mot de passe doit comporter au moins 6 caractères.';
+        errorDiv.classList.add('show');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+            phone: phone || null,
+            role: 'customer' // sera forcé côté serveur si pas admin
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur lors de l\'inscription.');
+
+        // L'API renvoie maintenant un userId et un message, pas de token
+        if (data.userId) {
+          // Rediriger vers la page de vérification avec l'ID utilisateur
+          window.location.href = `verify-email.html?userId=${data.userId}`;
+        } else {
+          // Cas où un admin crée un compte (ne devrait pas arriver sur cette page)
+          window.location.href = 'login.html';
+        }
+
+      } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.add('show');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,339 @@
+/* ============================================================
+   Famille & Fraîcheur – Styles globaux (mobile-first)
+   ============================================================ */
+
+/* ---------- Reset & Base ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:        #2E7D32;
+  --green-light:  #4CAF50;
+  --orange:       #F57C00;
+  --orange-light: #FF9800;
+  --white:        #FFFFFF;
+  --bg:           #FAFAFA;
+  --text:         #212121;
+  --text-light:   #757575;
+  --border:       #E0E0E0;
+  --red:          #D32F2F;
+  --shadow:       0 2px 8px rgba(0,0,0,0.08);
+  --radius:       12px;
+  --transition:   0.2s ease;
+}
+
+html { font-size: 16px; }
+body {
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+  padding-bottom: 70px; /* place pour la navbar mobile */
+}
+
+a { color: var(--green); text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+/* ---------- Typographie ---------- */
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.1rem; }
+
+/* ---------- Layout ---------- */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  background: var(--white);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: var(--shadow);
+}
+
+.main-content { padding: 1rem; }
+
+/* ---------- Navbar Mobile (fixée en bas) ---------- */
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 60px;
+  z-index: 100;
+}
+.mobile-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--text-light);
+  font-size: 0.7rem;
+  transition: var(--transition);
+  position: relative;
+}
+.mobile-nav a.active { color: var(--green); }
+.mobile-nav a i { font-size: 1.3rem; margin-bottom: 2px; }
+
+/* ---------- Cartes ---------- */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ---------- Boutons ---------- */
+.btn {
+  display: inline-block;
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: var(--transition);
+  text-align: center;
+}
+.btn-primary { background: var(--green); color: var(--white); }
+.btn-primary:hover { background: var(--green-light); }
+.btn-secondary { background: transparent; border: 2px solid var(--green); color: var(--green); }
+.btn-secondary:hover { background: var(--green); color: var(--white); }
+.btn-danger { background: var(--red); color: var(--white); }
+.btn-orange { background: var(--orange); color: var(--white); }
+.btn-orange:hover { background: var(--orange-light); }
+.btn-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+.btn-block { width: 100%; }
+
+/* ---------- Badges ---------- */
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: var(--orange);
+  color: var(--white);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Formulaires ---------- */
+.input-group { margin-bottom: 1rem; }
+.input-group label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+.input-group input,
+.input-group select,
+.input-group textarea {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: var(--transition);
+  background: var(--white);
+}
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(46,125,50,0.15);
+}
+.input-group .error-msg { color: var(--red); font-size: 0.8rem; margin-top: 0.2rem; }
+
+/* ---------- Produits ---------- */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+}
+.product-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+}
+.product-card:hover { transform: translateY(-3px); }
+.product-img {
+  height: 120px;
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+}
+.product-info { padding: 0.7rem; flex: 1; display: flex; flex-direction: column; }
+.product-name { font-weight: 600; font-size: 0.95rem; }
+.product-price { color: var(--green); font-weight: bold; margin-top: 0.2rem; }
+.product-stock { font-size: 0.8rem; color: var(--text-light); }
+.product-actions { display: flex; gap: 0.3rem; margin-top: 0.5rem; }
+
+/* ---------- Panier ---------- */
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.cart-item-name { flex: 1; }
+.cart-qty {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.cart-qty button {
+  width: 30px; height: 30px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ---------- Chat ---------- */
+.chat-container {
+  display: flex;
+  height: calc(100vh - 130px);
+  background: var(--white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.chat-sidebar {
+  width: 35%;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  background: #fafafa;
+}
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.chat-bubble {
+  max-width: 75%;
+  padding: 0.7rem 1rem;
+  border-radius: 18px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.chat-bubble-left {
+  align-self: flex-start;
+  background: #e8f5e9;
+  border-bottom-left-radius: 4px;
+}
+.chat-bubble-right {
+  align-self: flex-end;
+  background: var(--green);
+  color: var(--white);
+  border-bottom-right-radius: 4px;
+}
+.chat-input-area {
+  display: flex;
+  padding: 0.8rem;
+  border-top: 1px solid var(--border);
+  gap: 0.5rem;
+}
+.chat-input-area input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.6rem 1rem;
+}
+
+/* ---------- Carte Leaflet ---------- */
+.map-container { height: 300px; border-radius: var(--radius); overflow: hidden; }
+
+/* ---------- Dashboard Admin ---------- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.stat-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 1rem;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.stat-number { font-size: 1.8rem; font-weight: bold; color: var(--green); }
+.stat-label { font-size: 0.8rem; color: var(--text-light); margin-top: 0.2rem; }
+
+/* ---------- Livreur ---------- */
+.status-dot {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+}
+.status-online { background: var(--green-light); }
+.status-offline { background: var(--border); }
+
+/* ---------- Notifications ---------- */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--text);
+  color: var(--white);
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius);
+  z-index: 9999;
+  animation: slideIn 0.3s ease;
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+
+/* ---------- Utilitaires ---------- */
+.text-center { text-align: center; }
+.text-right  { text-align: right; }
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.hidden { display: none; }
+
+/* ---------- Responsive ---------- */
+@media (min-width: 768px) {
+  body { padding-bottom: 0; }
+  .mobile-nav { display: none; }
+  .page-header { position: static; box-shadow: none; }
+  .container { padding: 0 2rem; }
+  .chat-sidebar { width: 30%; }
+}

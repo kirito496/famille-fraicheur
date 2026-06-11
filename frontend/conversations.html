@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Famille & Fraîcheur – Conversations</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    .conv-page {
+      padding: 1rem;
+    }
+    .conv-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--white);
+      padding: 0.8rem 1rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 0.7rem;
+      cursor: pointer;
+      transition: 0.2s;
+      position: relative;
+    }
+    .conv-card:hover { background: #f1f8e9; }
+    .conv-card .badge-unread {
+      background: var(--orange);
+      color: white;
+      border-radius: 12px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h2>💬 Conversations</h2>
+    <button class="btn btn-sm btn-secondary" id="backBtn"><i class="fas fa-arrow-left"></i> Retour</button>
+  </div>
+
+  <div class="conv-page" id="conversationsContainer">
+    <p>Chargement...</p>
+  </div>
+
+  <nav class="mobile-nav">
+    <a href="products.html"><i class="fas fa-store"></i><span>Boutique</span></a>
+    <a href="account.html"><i class="fas fa-user"></i><span>Compte</span></a>
+    <a href="chat.html" class="active"><i class="fas fa-comments"></i><span>Chat</span></a>
+  </nav>
+
+  <script>
+    const API_BASE = '/api';
+    const token = localStorage.getItem('token');
+    const userRole = localStorage.getItem('userRole');
+    if (!token) window.location.href = 'login.html';
+
+    document.getElementById('backBtn').addEventListener('click', () => {
+      const pages = { admin: 'admin.html', delivery: 'livreur.html', customer: 'products.html' };
+      window.location.href = pages[userRole] || 'login.html';
+    });
+
+    async function loadConversations() {
+      try {
+        const res = await fetch(`${API_BASE}/messages/conversations`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const conversations = data.conversations || [];
+        const container = document.getElementById('conversationsContainer');
+
+        if (conversations.length === 0) {
+          container.innerHTML = '<p>Aucune conversation.</p>';
+          return;
+        }
+
+        container.innerHTML = conversations.map(conv => {
+          const otherName = conv.other_party_name || conv.customer_name || 'Inconnu';
+          return `
+            <div class="conv-card" onclick="window.location.href='chat.html?order=${conv.order_id}'">
+              <div>
+                <strong>${otherName}</strong>
+                <div style="font-size:0.8rem; color: var(--text-light);">${conv.last_message || ''}</div>
+              </div>
+              ${conv.unread_count > 0 ? `<span class="badge-unread">${conv.unread_count}</span>` : ''}
+            </div>`;
+        }).join('');
+      } catch (err) {
+        console.error('Erreur chargement conversations', err);
+      }
+    }
+
+    loadConversations();
+  </script>
+</body>
+</html>

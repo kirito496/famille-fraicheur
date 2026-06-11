@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Famille & Fraîcheur – Vérification email</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    .login-wrapper {
+      display: flex; min-height: 100vh; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .login-card {
+      width: 100%; max-width: 420px; background: var(--white); border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12); padding: 2.5rem 2rem; text-align: center;
+    }
+    .login-logo { font-size: 3rem; margin-bottom: 0.5rem; }
+    .login-title { font-size: 1.4rem; font-weight: 700; color: var(--green); margin-bottom: 0.2rem; }
+    .login-subtitle { color: var(--text-light); font-size: 0.95rem; margin-bottom: 2rem; }
+    .login-error { background: #ffebee; color: #D32F2F; padding: 0.6rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+    .login-error.show { display: block; }
+    .info-message { background: #e8f5e9; color: #2E7D32; padding: 0.6rem; border-radius: 8px; margin-bottom: 1rem; display: none; }
+    .info-message.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <div class="login-card">
+      <div class="login-logo">✉️</div>
+      <h1 class="login-title">Vérifier votre email</h1>
+      <p class="login-subtitle">Un code à 6 chiffres a été envoyé à votre adresse email.</p>
+      <p style="font-size:0.85rem; color:var(--text-light);">
+        En mode développement, le code s'affiche dans la console du serveur.
+      </p>
+
+      <div class="login-error" id="errorMsg"></div>
+      <div class="info-message" id="successMsg"></div>
+
+      <form id="verifyForm">
+        <div class="input-group">
+          <label for="code"><i class="fas fa-key"></i> Code de vérification</label>
+          <input type="text" id="code" name="code" placeholder="123456" required maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block mt-2">
+          <i class="fas fa-check-circle"></i> Vérifier
+        </button>
+      </form>
+
+      <p style="margin-top: 1.5rem; font-size: 0.9rem;">
+        <a href="login.html">Retour à la connexion</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+
+    // Récupérer l'ID utilisateur depuis l'URL (ex: verify-email.html?userId=xxx)
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId');
+
+    if (!userId) {
+      document.getElementById('errorMsg').textContent = 'ID utilisateur manquant. Veuillez vous inscrire d\'abord.';
+      document.getElementById('errorMsg').classList.add('show');
+      document.getElementById('verifyForm').style.display = 'none';
+    }
+
+    document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = document.getElementById('code').value.trim();
+      const errorDiv = document.getElementById('errorMsg');
+      const successDiv = document.getElementById('successMsg');
+
+      errorDiv.classList.remove('show');
+      errorDiv.textContent = '';
+      successDiv.classList.remove('show');
+      successDiv.textContent = '';
+
+      if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
+        errorDiv.textContent = 'Veuillez entrer un code valide à 6 chiffres.';
+        errorDiv.classList.add('show');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/verify-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, code })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur de vérification.');
+
+        // Stocker le token et les infos utilisateur
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('userName', data.user.name);
+        localStorage.setItem('userRole', data.user.role);
+
+        // Afficher le succès et rediriger
+        successDiv.textContent = 'Email vérifié avec succès ! Redirection vers la boutique...';
+        successDiv.classList.add('show');
+        document.getElementById('verifyForm').style.display = 'none';
+
+        setTimeout(() => {
+          window.location.href = 'products.html';
+        }, 2000);
+
+      } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.add('show');
+      }
+    });
+  </script>
+</body>
+</html>

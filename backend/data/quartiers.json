@@ -1,0 +1,42 @@
+
+{
+  "Calavi": [
+    { "nom": "Calavi centre", "prix": 800 },
+    { "nom": "Zopah", "prix": 850 },
+    { "nom": "Wologuè", "prix": 800 },
+    { "nom": "Godomey centre", "prix": 900 },
+    { "nom": "Aïdjèdo", "prix": 950 },
+    { "nom": "Dèkoungbé", "prix": 950 },
+    { "nom": "Gakpè", "prix": 950 },
+    { "nom": "Ouèdo centre", "prix": 950 },
+    { "nom": "Togba centre", "prix": 900 },
+    { "nom": "Agla (Calavi)", "prix": 950 },
+    { "nom": "Gbégamey (Calavi)", "prix": 1000 },
+    { "nom": "Akassato centre", "prix": 1100 },
+    { "nom": "Zinvié centre", "prix": 1100 },
+    { "nom": "Hêvié centre", "prix": 1100 },
+    { "nom": "Kpanroun centre", "prix": 1100 },
+    { "nom": "Golo-Djigbé centre", "prix": 1200 },
+    { "nom": "Cocotiers", "prix": 800 },
+    { "nom": "Sèmè", "prix": 800 },
+    { "nom": "Tokpa-Zoungo", "prix": 800 }
+  ],
+  "Cotonou": [
+    { "nom": "Cadjèhoun", "prix": 1500 },
+    { "nom": "Zongo", "prix": 1500 },
+    { "nom": "Ganhi", "prix": 1500 },
+    { "nom": "Haie Vive", "prix": 1400 },
+    { "nom": "Gbégamey (Cotonou)", "prix": 1400 },
+    { "nom": "Agla (Cotonou)", "prix": 1400 },
+    { "nom": "Dantokpa", "prix": 1600 },
+    { "nom": "Akpakpa", "prix": 1700 },
+    { "nom": "Fidjrossè", "prix": 1800 },
+    { "nom": "Fidjrossè plage", "prix": 2000 },
+    { "nom": "Vèdoko", "prix": 1700 },
+    { "nom": "Ahouansori", "prix": 1700 },
+    { "nom": "Saint-Michel", "prix": 1600 },
+    { "nom": "Finagnon", "prix": 1500 },
+    { "nom": "Enagnon", "prix": 1500 },
+    { "nom": "La Corniche Est", "prix": 1700 }
+  ]
+}

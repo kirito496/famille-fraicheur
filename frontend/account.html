@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Famille & Fraîcheur – Mon compte</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    :root {
+      --bg: #FAFAFA;
+      --white: #FFFFFF;
+      --text: #212121;
+      --text-light: #757575;
+      --border: #E0E0E0;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --green: #2E7D32;
+      --orange: #F57C00;
+      --red: #D32F2F;
+    }
+    body.dark-mode {
+      --bg: #1a1a1a;
+      --white: #2a2a2a;
+      --text: #e0e0e0;
+      --text-light: #aaaaaa;
+      --border: #444;
+      --shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    body {
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding-bottom: 70px;
+    }
+    .page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem; background: var(--white); box-shadow: var(--shadow);
+      position: sticky; top:0; z-index: 10;
+    }
+    .header-left {
+      display: flex; align-items: center; gap: 0.8rem;
+    }
+    .header-left h2 {
+      margin: 0; font-size: 1.3rem;
+    }
+    .header-left .slogan {
+      font-size: 0.85rem; color: var(--text-light); font-style: italic;
+    }
+    .header-actions {
+      display: flex; align-items: center; gap: 0.8rem;
+    }
+    .btn-icon {
+      background: transparent; border: none; color: var(--text);
+      font-size: 1.2rem; cursor: pointer; padding: 0.3rem;
+      position: relative; text-decoration: none;
+    }
+    .btn-icon:hover { color: var(--green); }
+    .badge {
+      position: absolute; top: -6px; right: -8px;
+      background: var(--orange); color: white; border-radius: 50%;
+      width: 18px; height: 18px; font-size: 0.65rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .main-content { padding: 1rem; max-width: 1200px; margin:0 auto; }
+
+    .account-tabs {
+      display: flex; gap: 0.5rem; overflow-x: auto;
+      margin-bottom: 1rem; padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .account-tab {
+      padding: 0.5rem 1rem; border-radius: 20px;
+      background: var(--white); border: 1px solid var(--border);
+      white-space: nowrap; cursor: pointer; font-size: 0.9rem;
+      transition: 0.2s;
+    }
+    .account-tab.active { background: var(--green); color: white; border-color: var(--green); }
+    .account-section { display: none; }
+    .account-section.active { display: block; }
+
+    .card {
+      background: var(--white); border-radius: 12px; padding: 1rem;
+      box-shadow: var(--shadow); margin-bottom: 1rem;
+    }
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr));
+      gap: 1rem; margin-bottom: 1rem;
+    }
+    .stat-card {
+      background: var(--white); border-radius: 12px; padding: 1.2rem;
+      text-align: center; box-shadow: var(--shadow);
+    }
+    .stat-number { font-size: 1.8rem; font-weight: bold; color: var(--green); }
+    .stat-label { font-size: 0.85rem; color: var(--text-light); margin-top: 0.2rem; }
+
+    .btn {
+      padding: 0.5rem 1rem; border: none; border-radius: 8px;
+      cursor: pointer; font-size: 0.9rem; transition: 0.2s;
+    }
+    .btn-primary { background: var(--green); color: white; }
+    .btn-secondary { background: transparent; border: 2px solid var(--green); color: var(--green); }
+    .btn-danger { background: var(--red); color: white; }
+    .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+
+    .badge-status {
+      display: inline-block; padding: 0.2rem 0.5rem; border-radius: 10px;
+      font-size: 0.7rem; font-weight: 600;
+    }
+    .status-pending { background: #fff3e0; color: #e65100; }
+    .status-assigned { background: #e3f2fd; color: #0d47a1; }
+    .status-in_progress { background: #e8f5e9; color: #1b5e20; }
+    .status-delivered { background: #e0f2f1; color: #004d40; }
+    .status-cancelled { background: #ffebee; color: #b71c1c; }
+
+    .timer { font-weight: bold; color: var(--orange); }
+
+    .profile-card {
+      display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;
+    }
+    .profile-avatar {
+      width: 70px; height: 70px; border-radius: 50%;
+      background: var(--green); color: white; display: flex;
+      align-items: center; justify-content: center; font-size: 2rem;
+      font-weight: bold; flex-shrink: 0;
+    }
+    .profile-info p { margin: 0.3rem 0; }
+    .editable-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .editable-row input, .editable-row select {
+      flex:1; padding: 0.4rem; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 0.9rem; background: var(--white); color: var(--text);
+    }
+
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+
+    @media (max-width: 768px) {
+      .main-content { padding: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <div class="header-left">
+      <h2>🥬 Famille & Fraîcheur</h2>
+      <span class="slogan">Le frais, vite et bien.</span>
+    </div>
+    <div class="header-actions">
+      <a href="products.html" class="btn-icon" title="Boutique"><i class="fas fa-store"></i></a>
+      <button class="btn-icon" id="refreshBtn" title="Rafraîchir"><i class="fas fa-sync-alt"></i></button>
+      <a href="chat.html" class="btn-icon" title="Messages">
+        <i class="fas fa-comments"></i>
+        <span class="badge" id="messageBadge" style="display:none;">0</span>
+      </a>
+      <button class="btn-icon" id="themeToggle" title="Changer le thème"><i class="fas fa-moon"></i></button>
+      <button class="btn-icon" id="logoutBtn" title="Déconnexion"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="account-tabs">
+      <span class="account-tab active" data-tab="dashboard">📊 Dashboard</span>
+      <span class="account-tab" data-tab="orders">📦 Commandes</span>
+      <span class="account-tab" data-tab="addresses">📍 Adresses</span>
+      <span class="account-tab" data-tab="favorites">❤️ Favoris</span>
+      <span class="account-tab" data-tab="profile">⚙️ Profil</span>
+    </div>
+
+    <!-- Dashboard -->
+    <section class="account-section active" id="section-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-number" id="stat-orders">0</div><div class="stat-label">Commandes</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-spent">0 FCFA</div><div class="stat-label">Dépensés</div></div>
+        <div class="stat-card"><div class="stat-number" id="stat-pending">0</div><div class="stat-label">En cours</div></div>
+      </div>
+      <p style="color:var(--text-light);">Bienvenue dans votre espace personnel.</p>
+    </section>
+
+    <!-- Commandes -->
+    <section class="account-section" id="section-orders">
+      <div id="ordersList">Chargement...</div>
+    </section>
+
+    <!-- Adresses (avec quartiers) -->
+    <section class="account-section" id="section-addresses">
+      <button class="btn btn-primary mb-1" id="addAddressBtn"><i class="fas fa-plus"></i> Nouvelle adresse</button>
+      <div id="addressesList"></div>
+    </section>
+
+    <!-- Favoris -->
+    <section class="account-section" id="section-favorites">
+      <div id="favoritesList">Chargement...</div>
+    </section>
+
+    <!-- Profil -->
+    <section class="account-section" id="section-profile">
+      <div class="card">
+        <h3>Mon profil</h3>
+        <div id="profileDisplay">
+          <div class="profile-card">
+            <div class="profile-avatar" id="profileInitials">?</div>
+            <div class="profile-info">
+              <p><strong id="dispName">-</strong></p>
+              <p style="color:var(--text-light);" id="dispEmail">-</p>
+              <p style="color:var(--text-light);"><i class="fas fa-phone"></i> <span id="dispPhone">-</span></p>
+              <p style="color:var(--text-light);"><i class="fab fa-whatsapp"></i> <span id="dispWhatsapp">-</span></p>
+            </div>
+          </div>
+          <button class="btn btn-secondary" id="editProfileBtn"><i class="fas fa-edit"></i> Modifier</button>
+        </div>
+        <div id="profileEdit" style="display:none;">
+          <div class="editable-row"><label>Nom :</label><input type="text" id="editName"></div>
+          <div class="editable-row"><label>Téléphone :</label><input type="text" id="editPhone"></div>
+          <div class="editable-row"><label>WhatsApp :</label><input type="text" id="editWhatsapp"></div>
+          <button class="btn btn-primary mt-1" id="saveProfileBtn">Enregistrer</button>
+          <button class="btn btn-secondary mt-1" id="cancelProfileBtn">Annuler</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const API_BASE = '/api';
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    const userRole = localStorage.getItem('userRole');
+    if (!token || userRole !== 'customer') window.location.href = 'login.html';
+
+    let timers = {};
+    let quartiersData = { Calavi: [], Cotonou: [] };
+
+    // ========== THÈME ==========
+    const themeBtn = document.getElementById('themeToggle');
+    const themeIcon = themeBtn.querySelector('i');
+    function applyTheme(mode) {
+      if (mode === 'dark') { document.body.classList.add('dark-mode'); themeIcon.className = 'fas fa-sun'; localStorage.setItem('theme', 'dark'); }
+      else if (mode === 'light') { document.body.classList.remove('dark-mode'); themeIcon.className = 'fas fa-moon'; localStorage.setItem('theme', 'light'); }
+      else { const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; document.body.classList.toggle('dark-mode', prefersDark); themeIcon.className = prefersDark ? 'fas fa-sun' : 'fas fa-moon'; localStorage.removeItem('theme'); }
+    }
+    themeBtn.addEventListener('click', () => { const current = localStorage.getItem('theme') || 'auto'; if (current === 'light') applyTheme('dark'); else if (current === 'dark') applyTheme('auto'); else applyTheme('light'); });
+    const savedTheme = localStorage.getItem('theme') || 'auto';
+    if (savedTheme === 'auto') { applyTheme('auto'); window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (!localStorage.getItem('theme')) applyTheme('auto'); }); }
+    else applyTheme(savedTheme);
+
+    // ========== RAFRAÎCHISSEMENT ==========
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      const activeTab = document.querySelector('.account-tab.active');
+      if (activeTab) {
+        const tabName = activeTab.dataset.tab;
+        if (tabName === 'dashboard') loadDashboard();
+        else if (tabName === 'orders') loadOrders();
+        else if (tabName === 'addresses') loadAddresses();
+        else if (tabName === 'favorites') loadFavorites();
+        else if (tabName === 'profile') loadProfile();
+      }
+    });
+
+    // ========== INIT ==========
+    async function init() {
+      await fetchQuartiers();
+      loadDashboard();
+      loadUnreadCount();
+      setupTabs();
+      document.getElementById('editProfileBtn').addEventListener('click', showProfileEdit);
+      document.getElementById('cancelProfileBtn').addEventListener('click', hideProfileEdit);
+      document.getElementById('saveProfileBtn').addEventListener('click', saveProfile);
+      document.getElementById('addAddressBtn').addEventListener('click', () => openAddressForm());
+    }
+
+    async function fetchQuartiers() {
+      try {
+        const res = await fetch(`${API_BASE}/quartiers`);
+        const data = await res.json();
+        quartiersData = data;
+      } catch(e) {}
+    }
+
+    function setupTabs() {
+      document.querySelectorAll('.account-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.account-tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.account-section').forEach(s => s.classList.remove('active'));
+          tab.classList.add('active');
+          const sectionId = `section-${tab.dataset.tab}`;
+          document.getElementById(sectionId).classList.add('active');
+          if (tab.dataset.tab === 'orders') loadOrders();
+          if (tab.dataset.tab === 'addresses') loadAddresses();
+          if (tab.dataset.tab === 'favorites') loadFavorites();
+          if (tab.dataset.tab === 'profile') loadProfile();
+        });
+      });
+    }
+
+    // ========== DASHBOARD ==========
+    async function loadDashboard() {
+      try {
+        const res = await fetch(`${API_BASE}/orders?limit=100`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const orders = data.orders || [];
+        document.getElementById('stat-orders').textContent = orders.length;
+        const spent = orders.reduce((s,o) => s + parseFloat(o.total_amount||0), 0);
+        document.getElementById('stat-spent').textContent = spent.toLocaleString() + ' FCFA';
+        const pending = orders.filter(o => !['delivered','cancelled','returned'].includes(o.status)).length;
+        document.getElementById('stat-pending').textContent = pending;
+      } catch(e){}
+    }
+
+    // ========== COMMANDES ==========
+    async function loadOrders() {
+      try {
+        const res = await fetch(`${API_BASE}/orders?limit=100`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const orders = data.orders || [];
+        renderOrders(orders);
+        Object.values(timers).forEach(clearInterval);
+        timers = {};
+        orders.forEach(o => {
+          const slot = parseSlot(o.delivery_slot);
+          if (slot && o.status !== 'delivered' && o.status !== 'cancelled' && o.status !== 'returned') {
+            const el = document.getElementById(`timer-${o.id}`);
+            if (el) {
+              updateTimer(el, slot.end);
+              timers[o.id] = setInterval(() => updateTimer(el, slot.end), 1000);
+            }
+          }
+        });
+      } catch(e){}
+    }
+
+    function parseSlot(slot) { if (!slot) return null; const match = slot.match(/\["?([^"]+)"?,\s*"?([^"]+)"?\)/); if (!match) return null; return { start: new Date(match[1]), end: new Date(match[2]) }; }
+    function getRemainingSeconds(end) { const diff = end - new Date(); return diff > 0 ? Math.floor(diff / 1000) : 0; }
+    function formatTime(seconds) { if (seconds <= 0) return '0s'; const h = Math.floor(seconds / 3600); const m = Math.floor((seconds % 3600) / 60); const s = seconds % 60; return `${h > 0 ? h + 'h ' : ''}${m > 0 ? m + 'm ' : ''}${s}s`; }
+    function updateTimer(el, end) { const remaining = getRemainingSeconds(end); el.textContent = remaining > 0 ? formatTime(remaining) : 'Dépassé'; el.style.color = remaining > 0 ? 'var(--orange)' : 'var(--red)'; }
+
+    function renderOrders(orders) {
+      const container = document.getElementById('ordersList');
+      if (!orders.length) { container.innerHTML = '<p>Aucune commande.</p>'; return; }
+      container.innerHTML = orders.map(o => {
+        const slot = parseSlot(o.delivery_slot);
+        const remaining = slot ? getRemainingSeconds(slot.end) : -1;
+        const timerHtml = (o.status !== 'delivered' && o.status !== 'cancelled' && o.status !== 'returned')
+          ? `<span class="timer" id="timer-${o.id}">${remaining >= 0 ? formatTime(remaining) : '--'}</span>`
+          : '';
+        const deliveryName = o.delivery_name || 'Non assigné';
+        const statusLabel = { pending:'En attente', confirmed:'Confirmée', assigned:'Assignée', in_progress:'En cours', delivered:'Livrée', cancelled:'Annulée', returned:'Retournée' }[o.status] || o.status;
+        return `
+          <div class="card">
+            <div class="flex-between"><strong>#${o.id.substring(0,8)}</strong><span class="badge-status status-${o.status}">${statusLabel}</span></div>
+            <div>Adresse: ${o.address_label || o.full_address || 'N/A'}</div>
+            <div>Montant: ${o.total_amount} FCFA</div>
+            <div>Paiement: ${o.payment_method === 'mobile_money' ? 'Mobile Money' : 'Espèces'}</div>
+            <div>Livreur: ${deliveryName}</div>
+            <div>Créneau: ${slot ? slot.start.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' - ' + slot.end.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : 'N/A'} ${timerHtml}</div>
+            ${o.problem_reported ? '<div style="color:var(--red);">⚠️ Problème signalé</div>' : ''}
+            <div class="mt-1">
+              <a href="chat.html?order=${o.id}" class="btn btn-sm btn-secondary"><i class="fas fa-comments"></i> Contacter le livreur</a>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ========== ADRESSES avec quartiers et prix ==========
+    async function loadAddresses() {
+      try {
+        const res = await fetch(`${API_BASE}/addresses`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const addresses = data.addresses || [];
+        const container = document.getElementById('addressesList');
+        container.innerHTML = addresses.map(a => `
+          <div class="card" id="addr-${a.id}">
+            <div class="addr-display">
+              <strong>${a.label}</strong><br>
+              ${a.full_address}, ${a.city} ${a.district||''}
+              <div class="mt-1">
+                <button class="btn btn-sm btn-secondary edit-addr" data-id="${a.id}"><i class="fas fa-edit"></i> Modifier</button>
+                <button class="btn btn-sm btn-danger delete-addr" data-id="${a.id}"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+            <div class="addr-edit" style="display:none;">
+              <div class="editable-row"><label>Libellé:</label><input type="text" class="edit-label" value="${a.label}"></div>
+              <div class="editable-row"><label>Adresse:</label><input type="text" class="edit-address" value="${a.full_address}"></div>
+              <div class="editable-row">
+                <label>Commune:</label>
+                <select class="edit-commune">
+                  <option value="Calavi" ${a.city==='Calavi'?'selected':''}>Calavi</option>
+                  <option value="Cotonou" ${a.city==='Cotonou'?'selected':''}>Cotonou</option>
+                </select>
+              </div>
+              <div class="editable-row">
+                <label>Quartier:</label>
+                <select class="edit-quartier">
+                  ${(quartiersData[a.city] || []).map(q => `<option value="${q.nom}" ${q.nom===a.district?'selected':''}>${q.nom}</option>`).join('')}
+                </select>
+              </div>
+              <div class="editable-row">
+                <label>Mode livraison:</label>
+                <select class="edit-mode">
+                  <option value="classic">Classique</option>
+                  <option value="express">Express (+50%)</option>
+                </select>
+              </div>
+              <div class="editable-row" id="price-display-${a.id}">
+                <label>Prix livraison :</label>
+                <span class="delivery-price" style="font-weight:bold; color:var(--green);">— FCFA</span>
+              </div>
+              <button class="btn btn-primary save-addr" data-id="${a.id}">Enregistrer</button>
+              <button class="btn btn-secondary cancel-addr" data-id="${a.id}">Annuler</button>
+            </div>
+          </div>
+        `).join('');
+
+        // Attacher les événements
+        document.querySelectorAll('.edit-addr').forEach(btn => btn.addEventListener('click', (e) => toggleAddressEdit(e.currentTarget.dataset.id)));
+        document.querySelectorAll('.cancel-addr').forEach(btn => btn.addEventListener('click', (e) => toggleAddressEdit(e.currentTarget.dataset.id)));
+        document.querySelectorAll('.save-addr').forEach(btn => btn.addEventListener('click', (e) => saveAddress(e.currentTarget.dataset.id)));
+        document.querySelectorAll('.delete-addr').forEach(btn => btn.addEventListener('click', (e) => deleteAddress(e.currentTarget.dataset.id)));
+        document.querySelectorAll('.edit-commune').forEach(sel => {
+          sel.addEventListener('change', function() {
+            const card = this.closest('.card');
+            const commune = this.value;
+            const quartierSel = card.querySelector('.edit-quartier');
+            quartierSel.innerHTML = (quartiersData[commune] || []).map(q => `<option value="${q.nom}">${q.nom}</option>`).join('');
+            updatePriceDisplay(card);
+          });
+        });
+        document.querySelectorAll('.edit-quartier').forEach(sel => sel.addEventListener('change', function() { updatePriceDisplay(this.closest('.card')); }));
+        document.querySelectorAll('.edit-mode').forEach(sel => sel.addEventListener('change', function() { updatePriceDisplay(this.closest('.card')); }));
+
+        // Afficher le prix initial
+        document.querySelectorAll('.addr-edit').forEach(editDiv => updatePriceDisplay(editDiv.closest('.card')));
+      } catch(e){}
+    }
+
+    function updatePriceDisplay(card) {
+      const commune = card.querySelector('.edit-commune')?.value;
+      const quartierNom = card.querySelector('.edit-quartier')?.value;
+      const mode = card.querySelector('.edit-mode')?.value;
+      const priceSpan = card.querySelector('.delivery-price');
+      if (!commune || !quartierNom || !priceSpan) return;
+      const quartier = (quartiersData[commune] || []).find(q => q.nom === quartierNom);
+      if (!quartier) { priceSpan.textContent = '— FCFA'; return; }
+      let price = quartier.prix;
+      if (mode === 'express') price = Math.min(price * 1.5, 3000);
+      priceSpan.textContent = `${price} FCFA`;
+    }
+
+    function toggleAddressEdit(id) {
+      const card = document.getElementById(`addr-${id}`);
+      const display = card.querySelector('.addr-display');
+      const edit = card.querySelector('.addr-edit');
+      if (display.style.display === 'none') {
+        display.style.display = 'block'; edit.style.display = 'none';
+      } else {
+        display.style.display = 'none'; edit.style.display = 'block';
+        updatePriceDisplay(card);
+      }
+    }
+
+    function openAddressForm() {
+      const container = document.getElementById('addressesList');
+      const form = document.createElement('div');
+      form.className = 'card';
+      form.innerHTML = `
+        <h4>Nouvelle adresse</h4>
+        <div class="editable-row"><label>Libellé:</label><input type="text" id="newAddrLabel"></div>
+        <div class="editable-row"><label>Adresse:</label><input type="text" id="newAddrFull"></div>
+        <div class="editable-row">
+          <label>Commune:</label>
+          <select id="newAddrCommune">
+            <option value="Calavi">Calavi</option>
+            <option value="Cotonou">Cotonou</option>
+          </select>
+        </div>
+        <div class="editable-row">
+          <label>Quartier:</label>
+          <select id="newAddrQuartier">
+            ${(quartiersData['Calavi'] || []).map(q => `<option value="${q.nom}">${q.nom}</option>`).join('')}
+          </select>
+        </div>
+        <div class="editable-row">
+          <label>Mode livraison:</label>
+          <select id="newAddrMode">
+            <option value="classic">Classique</option>
+            <option value="express">Express (+50%)</option>
+          </select>
+        </div>
+        <div class="editable-row">
+          <label>Prix livraison :</label>
+          <span id="newAddrPrice" style="font-weight:bold; color:var(--green);">— FCFA</span>
+        </div>
+        <button class="btn btn-primary" id="saveNewAddr">Enregistrer</button>
+        <button class="btn btn-secondary" id="cancelNewAddr">Annuler</button>
+      `;
+      container.prepend(form);
+      document.getElementById('newAddrCommune').addEventListener('change', function() {
+        const commune = this.value;
+        const quartierSel = document.getElementById('newAddrQuartier');
+        quartierSel.innerHTML = (quartiersData[commune] || []).map(q => `<option value="${q.nom}">${q.nom}</option>`).join('');
+        updateNewAddrPrice();
+      });
+      document.getElementById('newAddrQuartier').addEventListener('change', updateNewAddrPrice);
+      document.getElementById('newAddrMode').addEventListener('change', updateNewAddrPrice);
+      document.getElementById('saveNewAddr').addEventListener('click', createAddress);
+      document.getElementById('cancelNewAddr').addEventListener('click', () => form.remove());
+      updateNewAddrPrice();
+    }
+
+    function updateNewAddrPrice() {
+      const commune = document.getElementById('newAddrCommune')?.value;
+      const quartierNom = document.getElementById('newAddrQuartier')?.value;
+      const mode = document.getElementById('newAddrMode')?.value;
+      const priceSpan = document.getElementById('newAddrPrice');
+      if (!commune || !quartierNom || !priceSpan) return;
+      const quartier = (quartiersData[commune] || []).find(q => q.nom === quartierNom);
+      if (!quartier) { priceSpan.textContent = '— FCFA'; return; }
+      let price = quartier.prix;
+      if (mode === 'express') price = Math.min(price * 1.5, 3000);
+      priceSpan.textContent = `${price} FCFA`;
+    }
+
+    async function createAddress() {
+      const label = document.getElementById('newAddrLabel').value;
+      const full_address = document.getElementById('newAddrFull').value;
+      const city = document.getElementById('newAddrCommune').value;
+      const district = document.getElementById('newAddrQuartier').value;
+      const mode = document.getElementById('newAddrMode').value;
+      if (!label || !full_address || !city || !district) return alert('Tous les champs sont requis.');
+      const quartier = (quartiersData[city] || []).find(q => q.nom === district);
+      const payload = {
+        label, full_address, city, district,
+        delivery_price: quartier ? quartier.prix : 500,
+        delivery_mode: mode
+      };
+      await fetch(`${API_BASE}/addresses`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      loadAddresses();
+    }
+
+    async function saveAddress(id) {
+      const card = document.getElementById(`addr-${id}`);
+      const label = card.querySelector('.edit-label').value;
+      const full_address = card.querySelector('.edit-address').value;
+      const city = card.querySelector('.edit-commune').value;
+      const district = card.querySelector('.edit-quartier').value;
+      const mode = card.querySelector('.edit-mode').value;
+      if (!label || !full_address || !city || !district) return alert('Tous les champs sont requis.');
+      const quartier = (quartiersData[city] || []).find(q => q.nom === district);
+      const payload = {
+        label, full_address, city, district,
+        delivery_price: quartier ? quartier.prix : 500,
+        delivery_mode: mode
+      };
+      await fetch(`${API_BASE}/addresses/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      loadAddresses();
+    }
+
+    async function deleteAddress(id) {
+      if (!confirm('Supprimer cette adresse ?')) return;
+      await fetch(`${API_BASE}/addresses/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`} });
+      loadAddresses();
+    }
+
+    // ========== FAVORIS ==========
+    async function loadFavorites() {
+      try {
+        const res = await fetch(`${API_BASE}/favorites`, { headers: { 'Authorization':`Bearer ${token}` } });
+        const data = await res.json();
+        const favs = data.favorites || [];
+        const container = document.getElementById('favoritesList');
+        container.innerHTML = favs.length ? favs.map(f => `
+          <div class="card flex-between"><div>${f.name} - ${f.price} FCFA (stock:${f.stock})</div>
+          <button class="btn btn-sm btn-danger remove-fav" data-id="${f.product_id}"><i class="fas fa-trash"></i></button></div>
+        `).join('') : '<p>Aucun favori.</p>';
+        document.querySelectorAll('.remove-fav').forEach(btn => btn.addEventListener('click', async (e) => {
+          const id = e.currentTarget.dataset.id;
+          await fetch(`${API_BASE}/favorites/${id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${token}`}});
+          loadFavorites();
+        }));
+      } catch(e){}
+    }
+
+    // ========== PROFIL ==========
+    async function loadProfile() {
+      try {
+        const res = await fetch(`${API_BASE}/auth/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const u = data.user;
+        document.getElementById('dispName').textContent = u.name || '-';
+        document.getElementById('dispEmail').textContent = u.email || '-';
+        document.getElementById('dispPhone').textContent = u.phone || '-';
+        document.getElementById('dispWhatsapp').textContent = u.whatsapp || '-';
+        document.getElementById('editName').value = u.name || '';
+        document.getElementById('editPhone').value = u.phone || '';
+        document.getElementById('editWhatsapp').value = u.whatsapp || '';
+        const initials = (u.name || '?').charAt(0).toUpperCase();
+        document.getElementById('profileInitials').textContent = initials;
+      } catch(e){}
+    }
+    function showProfileEdit() { document.getElementById('profileDisplay').style.display = 'none'; document.getElementById('profileEdit').style.display = 'block'; }
+    function hideProfileEdit() { document.getElementById('profileDisplay').style.display = 'block'; document.getElementById('profileEdit').style.display = 'none'; }
+    async function saveProfile() {
+      const name = document.getElementById('editName').value;
+      const phone = document.getElementById('editPhone').value;
+      const whatsapp = document.getElementById('editWhatsapp').value;
+      await fetch(`${API_BASE}/auth/me`, { method:'PUT', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({ name, phone, whatsapp }) });
+      hideProfileEdit(); loadProfile();
+    }
+
+    async function loadUnreadCount() {
+      try {
+        const res = await fetch(`${API_BASE}/messages/conversations`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const total = (data.conversations||[]).reduce((s,c) => s + (c.unread_count||0), 0);
+        const badge = document.getElementById('messageBadge');
+        if (total > 0) { badge.style.display = 'flex'; badge.textContent = total > 99 ? '99+' : total; }
+        else badge.style.display = 'none';
+      } catch(e){}
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
+    init();
+  </script>
+</body>
+</html>
