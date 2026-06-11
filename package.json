@@ -4,8 +4,9 @@
   "description": "Plateforme e-commerce de livraison de produits frais au Bénin (Calavi / Cotonou)",
   "main": "server.js",
   "scripts": {
-  "start": "node backend/server.js",
-  "dev": "nodemon backend/server.js"
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "init-db": "node scripts/init-db.js"
   },
   "keywords": [
     "e-commerce",
