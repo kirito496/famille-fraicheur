@@ -8,6 +8,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
+app.set('trust proxy', 1);
 
 // ---------- Middlewares de sécurité ----------
 app.use(helmet()); // Protège les en-têtes HTTP
