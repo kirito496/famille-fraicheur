@@ -19,6 +19,7 @@ const SQL_FILES = [
   'add_promos.sql',      // 4. Tables promotions et notifications push
   'update_promos.sql',   // 5. Améliorations des promotions
   'add_features.sql',    // 6. Email vérification, statut livreur, paiement, créneaux
+  'seed_admin.sql',      // 7. Marque l'e-mail de l'admin comme vérifié
 ];
 
 const DATABASE_DIR = path.join(__dirname, '..', 'database');
