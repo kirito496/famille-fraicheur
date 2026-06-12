@@ -1,4 +1,4 @@
-// app.js – Application Express (API REST) – version sécurisée
+// app.js – Application Express (API REST) – version sécurisée & corrigée
 
 const express = require('express');
 const cors = require('cors');
@@ -11,7 +11,41 @@ const app = express();
 app.set('trust proxy', 1);
 
 // ---------- Middlewares de sécurité ----------
-app.use(helmet()); // Protège les en-têtes HTTP
+// CORRECTION : helmet() par défaut bloque les scripts écrits dans le HTML
+// (Content-Security-Policy: script-src 'self'), ce qui empêchait l'inscription
+// et la connexion de fonctionner (la page se rechargeait sans rien faire).
+// On définit ici une CSP adaptée à ton projet : scripts inline autorisés,
+// + les CDN que tu utilises (Socket.IO, Leaflet, Font Awesome) + WebSockets.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "default-src": ["'self'"],
+        // Scripts : inline (tes <script> dans les .html) + CDN socket.io et leaflet
+        "script-src": [
+          "'self'",
+          "'unsafe-inline'",
+          "https://cdn.socket.io",
+          "https://unpkg.com",
+        ],
+        // Styles : inline + Font Awesome (cdnjs) + Leaflet (unpkg)
+        "style-src": [
+          "'self'",
+          "'unsafe-inline'",
+          "https://cdnjs.cloudflare.com",
+          "https://unpkg.com",
+        ],
+        // Images : locales, data: et https (nécessaire pour les tuiles de carte Leaflet)
+        "img-src": ["'self'", "data:", "https:"],
+        // Connexions : API même origine + WebSockets (chat temps réel Socket.IO)
+        "connect-src": ["'self'", "ws:", "wss:"],
+        // Polices : locales, data: et Font Awesome
+        "font-src": ["'self'", "data:", "https://cdnjs.cloudflare.com"],
+      },
+    },
+  })
+);
 
 // Limiteur global pour toutes les routes /api/
 const globalLimiter = rateLimit({
@@ -32,11 +66,13 @@ app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 
 // ---------- CORS ----------
+// Note : ton frontend est servi par CE serveur (même origine), donc le CORS
+// ne concerne que d'éventuels clients externes. Configuration laissée telle quelle.
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? (process.env.ALLOWED_ORIGIN || 'https://votredomaine.bj')
     : '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
@@ -66,9 +102,12 @@ if (process.env.NODE_ENV !== 'production') {
   app.use('/api/debug', require('./routes/debug'));
 }
 
-// Route de test
+// ---------- Page d'accueil ----------
+// CORRECTION : avant, "/" renvoyait juste le texte "Famille & Fraîcheur API".
+// On redirige vers la page de connexion (change pour '/products.html' si tu
+// préfères que la boutique soit la page d'accueil).
 app.get('/', (req, res) => {
-  res.send('Famille & Fraîcheur API');
+  res.redirect('/login.html');
 });
 
 // Gestion des erreurs 404
