@@ -18,6 +18,7 @@ const SQL_FILES = [
   'insert_all_utf8.sql', // 3. Catégories et produits (ASCII sans accents)
   'add_promos.sql',      // 4. Tables promotions et notifications push
   'update_promos.sql',   // 5. Améliorations des promotions
+  'add_features.sql',    // 6. Email vérification, statut livreur, paiement, créneaux
 ];
 
 const DATABASE_DIR = path.join(__dirname, '..', 'database');
