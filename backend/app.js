@@ -1,4 +1,4 @@
-// app.js – Application Express (API REST) – version sécurisée & corrigée
+// app.js – Application Express (API REST) – version finale sécurisée
 
 const express = require('express');
 const cors = require('cors');
@@ -8,10 +8,9 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-app.set('trust proxy', 1); // 🔥 Correction pour railway
+app.set('trust proxy', 1);   // 🔥 obligatoire pour Railway
 
-// ---------- Middlewares de sécurité ----------
-// CSP adaptée pour autoriser les scripts inline, les CDN et les websockets
+// ---------- Content Security Policy ----------
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -32,22 +31,31 @@ app.use(
           "https://fonts.googleapis.com",
         ],
         "img-src": ["'self'", "data:", "https:"],
-        "connect-src": ["'self'", "ws:", "wss:"],
-        "font-src": ["'self'", "data:", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
+        "connect-src": [
+          "'self'",
+          "ws:",
+          "wss:",
+          "https://famille-fraicheur-production.up.railway.app",  // ← votre domaine Railway
+        ],
+        "font-src": [
+          "'self'",
+          "data:",
+          "https://cdnjs.cloudflare.com",
+          "https://fonts.gstatic.com",
+        ],
       },
     },
   })
 );
 
-// Limiteur global pour toutes les routes /api/
+// ---------- Rate limiting ----------
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 500,
   message: { error: 'Trop de requêtes, veuillez réessayer plus tard.' },
 });
 app.use('/api/', globalLimiter);
 
-// Limiteur plus strict pour les routes d'authentification
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -70,10 +78,10 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// ---------- Fichiers statiques (frontend) ----------
+// ---------- Static files (frontend) ----------
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
-// ---------- Routes API ----------
+// ---------- API routes ----------
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
@@ -82,27 +90,26 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/locations', require('./routes/locations'));
 app.use('/api/favorites', require('./routes/favorites'));
 app.use('/api/special-offers', require('./routes/specialOffers'));
-// app.use('/api/notifications', require('./routes/notifications')); // Désactivé temporairement
+// app.use('/api/notifications', require('./routes/notifications'));   // désactivé
 app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/quartiers', require('./routes/quartiers'));
 app.use('/api/delivery-slots', require('./routes/deliverySlots'));
 
-// Route de debug – désactiver en production
+// ---------- Debug route (only in development) ----------
 if (process.env.NODE_ENV !== 'production') {
   app.use('/api/debug', require('./routes/debug'));
 }
 
-// ---------- Page d'accueil ----------
+// ---------- Homepage ----------
 app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
 
-// Gestion des erreurs 404
+// ---------- 404 & error handler ----------
 app.use((req, res) => {
   res.status(404).json({ error: 'Route introuvable' });
 });
 
-// Gestion des erreurs globales
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Erreur interne du serveur' });
