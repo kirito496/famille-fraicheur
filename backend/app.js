@@ -100,7 +100,7 @@ app.use('/api/special-offers', require('./routes/specialOffers'));
 app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/quartiers', require('./routes/quartiers'));
 app.use('/api/delivery-slots', require('./routes/deliverySlots'));
-app.use('/api/payments', require('./routes/payments')); // paiement KkiaPay
+// app.use('/api/payments', require('./routes/payments')); // 🔒 KkiaPay : à RÉACTIVER seulement après avoir créé routes/payments.js + services/payment.js + ajouté la dépendance dans package.json
 
 // Route de debug – désactivée en production
 if (process.env.NODE_ENV !== 'production') {
