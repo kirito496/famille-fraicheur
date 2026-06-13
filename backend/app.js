@@ -10,7 +10,10 @@ require('dotenv').config();
 const app = express();
 app.set('trust proxy', 1);   // 🔥 obligatoire pour Railway
 
-// ---------- Content Security Policy ----------
+// ---------- 1. Fichiers statiques AVANT les limiteurs (pour ne pas les compter) ----------
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
+
+// ---------- 2. Content Security Policy ----------
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -35,7 +38,9 @@ app.use(
           "'self'",
           "ws:",
           "wss:",
-          "https://famille-fraicheur-production.up.railway.app",  // ← votre domaine Railway
+          "https://famille-fraicheur-production.up.railway.app",
+          "https://cdnjs.cloudflare.com",   // pour Font Awesome fetch
+          "https://unpkg.com",              // pour Leaflet
         ],
         "font-src": [
           "'self'",
@@ -48,7 +53,7 @@ app.use(
   })
 );
 
-// ---------- Rate limiting ----------
+// ---------- 3. Rate limiting (uniquement sur /api/) ----------
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 500,
@@ -65,7 +70,7 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 
-// ---------- CORS ----------
+// ---------- 4. CORS ----------
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? (process.env.ALLOWED_ORIGIN || 'https://votredomaine.bj')
@@ -74,14 +79,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// ---------- Parsing ----------
+// ---------- 5. Parsing ----------
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// ---------- Static files (frontend) ----------
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
-
-// ---------- API routes ----------
+// ---------- 6. Routes API ----------
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
@@ -95,17 +97,16 @@ app.use('/api/addresses', require('./routes/addresses'));
 app.use('/api/quartiers', require('./routes/quartiers'));
 app.use('/api/delivery-slots', require('./routes/deliverySlots'));
 
-// ---------- Debug route (only in development) ----------
 if (process.env.NODE_ENV !== 'production') {
   app.use('/api/debug', require('./routes/debug'));
 }
 
-// ---------- Homepage ----------
+// ---------- 7. Homepage ----------
 app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
 
-// ---------- 404 & error handler ----------
+// ---------- 8. Erreurs ----------
 app.use((req, res) => {
   res.status(404).json({ error: 'Route introuvable' });
 });
