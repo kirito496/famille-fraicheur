@@ -8,40 +8,32 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-app.set('trust proxy', 1);
+app.set('trust proxy', 1); // 🔥 Correction pour railway
 
 // ---------- Middlewares de sécurité ----------
-// CORRECTION : helmet() par défaut bloque les scripts écrits dans le HTML
-// (Content-Security-Policy: script-src 'self'), ce qui empêchait l'inscription
-// et la connexion de fonctionner (la page se rechargeait sans rien faire).
-// On définit ici une CSP adaptée à ton projet : scripts inline autorisés,
-// + les CDN que tu utilises (Socket.IO, Leaflet, Font Awesome) + WebSockets.
+// CSP adaptée pour autoriser les scripts inline, les CDN et les websockets
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
         "default-src": ["'self'"],
-        // Scripts : inline (tes <script> dans les .html) + CDN socket.io et leaflet
         "script-src": [
           "'self'",
           "'unsafe-inline'",
           "https://cdn.socket.io",
           "https://unpkg.com",
         ],
-        // Styles : inline + Font Awesome (cdnjs) + Leaflet (unpkg)
         "style-src": [
           "'self'",
           "'unsafe-inline'",
           "https://cdnjs.cloudflare.com",
           "https://unpkg.com",
+          "https://fonts.googleapis.com",
         ],
-        // Images : locales, data: et https (nécessaire pour les tuiles de carte Leaflet)
         "img-src": ["'self'", "data:", "https:"],
-        // Connexions : API même origine + WebSockets (chat temps réel Socket.IO)
         "connect-src": ["'self'", "ws:", "wss:"],
-        // Polices : locales, data: et Font Awesome
-        "font-src": ["'self'", "data:", "https://cdnjs.cloudflare.com"],
+        "font-src": ["'self'", "data:", "https://cdnjs.cloudflare.com", "https://fonts.gstatic.com"],
       },
     },
   })
@@ -50,7 +42,7 @@ app.use(
 // Limiteur global pour toutes les routes /api/
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // max 500 requêtes par IP dans la fenêtre
+  max: 500,
   message: { error: 'Trop de requêtes, veuillez réessayer plus tard.' },
 });
 app.use('/api/', globalLimiter);
@@ -58,7 +50,7 @@ app.use('/api/', globalLimiter);
 // Limiteur plus strict pour les routes d'authentification
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20, // max 20 tentatives de connexion/inscription
+  max: 20,
   message: { error: 'Trop de tentatives, veuillez réessayer plus tard.' },
 });
 app.use('/api/auth/login', authLimiter);
@@ -66,8 +58,6 @@ app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 
 // ---------- CORS ----------
-// Note : ton frontend est servi par CE serveur (même origine), donc le CORS
-// ne concerne que d'éventuels clients externes. Configuration laissée telle quelle.
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? (process.env.ALLOWED_ORIGIN || 'https://votredomaine.bj')
@@ -103,9 +93,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // ---------- Page d'accueil ----------
-// CORRECTION : avant, "/" renvoyait juste le texte "Famille & Fraîcheur API".
-// On redirige vers la page de connexion (change pour '/products.html' si tu
-// préfères que la boutique soit la page d'accueil).
 app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
