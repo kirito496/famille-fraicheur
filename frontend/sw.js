@@ -1,7 +1,8 @@
 // sw.js – Service Worker pour Famille & Fraîcheur
 // Gère le cache et les notifications push
 
-const CACHE_NAME = 'famille-fraicheur-v1';
+const CACHE_NAME = 'famille-fraicheur-v2'; // ⬅️ version augmentée pour forcer la mise à jour
+
 const STATIC_ASSETS = [
   '/',
   '/login.html',
@@ -15,18 +16,7 @@ const STATIC_ASSETS = [
   '/reset-password.html',
   '/register.html',
   '/css/style.css',
-  '/js/apiClient.js',
-  '/js/authClient.js',
-  '/js/cartClient.js',
-  '/js/chatClient.js',
-  '/js/mapClient.js',
-  '/js/utilsClient.js',
-  '/js/pwaClient.js',
   '/manifest.json',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
-  'https://cdn.socket.io/4.8.0/socket.io.min.js',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
 ];
 
 // ======= Installation : mise en cache des fichiers statiques =======
@@ -36,7 +26,7 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         console.log('SW: mise en cache des assets');
         return cache.addAll(STATIC_ASSETS).catch((err) => {
-          console.warn('SW: certains assets n\'ont pas pu être mis en cache', err);
+          console.warn('SW: certains assets non mis en cache', err);
         });
       })
       .then(() => self.skipWaiting())
@@ -58,26 +48,37 @@ self.addEventListener('activate', (event) => {
 
 // ======= Stratégie de cache : Network first, puis cache =======
 self.addEventListener('fetch', (event) => {
-  // Ignorer les requêtes non GET
-  if (event.request.method !== 'GET') return;
-  // Ignorer les API (elles ne doivent pas être en cache)
-  if (event.request.url.includes('/api/')) return;
+  const request = event.request;
+
+  // 1. Ne gérer que les requêtes GET
+  if (request.method !== 'GET') return;
+
+  // 2. NE PAS intercepter les requêtes vers d'autres domaines
+  //    (KkiaPay, Cloudflare, Socket.IO, Leaflet, etc.).
+  //    On laisse le navigateur les gérer normalement.
+  //    >> C'est ce qui corrige l'erreur "Failed to convert value to 'Response'".
+  if (new URL(request.url).origin !== self.location.origin) return;
+
+  // 3. Ne pas mettre les API en cache
+  if (request.url.includes('/api/')) return;
 
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then((response) => {
-        // Mettre en cache une copie de la réponse si elle est valide
         if (response && response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
       })
-      .catch(() => {
-        // En cas d'échec réseau, servir depuis le cache
-        return caches.match(event.request);
+      .catch(async () => {
+        // En cas d'échec réseau : servir depuis le cache,
+        // et TOUJOURS renvoyer une Response valide (jamais undefined).
+        const cached = await caches.match(request);
+        return cached || new Response('Hors ligne', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        });
       })
   );
 });
@@ -99,14 +100,10 @@ self.addEventListener('push', (event) => {
     icon: '/images/icon-192.png',
     badge: '/images/icon-192.png',
     vibrate: [200, 100, 200],
-    data: {
-      url: data.url || '/'
-    }
+    data: { url: data.url || '/' },
   };
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+  event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
 // ======= Clic sur une notification =======
@@ -115,13 +112,11 @@ self.addEventListener('notificationclick', (event) => {
   const url = event.notification.data?.url || '/';
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then((windowClients) => {
-      // Si un onglet est déjà ouvert, focus et navigue
       for (let client of windowClients) {
         if (client.url === url && 'focus' in client) {
           return client.focus();
         }
       }
-      // Sinon, ouvrir un nouvel onglet
       if (clients.openWindow) {
         return clients.openWindow(url);
       }
