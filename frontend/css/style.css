@@ -337,3 +337,35 @@ h3 { font-size: 1.1rem; }
   .container { padding: 0 2rem; }
   .chat-sidebar { width: 30%; }
 }
+/* ============================================================
+   Correctifs mobile (ajoutés) – éviter tout débordement
+   ============================================================ */
+html, body { overflow-x: hidden; max-width: 100%; }
+
+/* Grille produits : 2 colonnes qui rétrécissent toujours pour tenir l'écran */
+.product-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 480px) {
+  .product-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
+
+/* Noms de produits longs : retour à la ligne au lieu de déborder */
+.product-name { overflow-wrap: anywhere; }
+
+/* Boutons d'action : passent à la ligne / se partagent la largeur */
+.product-actions { flex-wrap: wrap; }
+.product-actions .btn { flex: 1; min-width: 0; }
+
+/* En-tête : le titre ne pousse plus les icônes hors de l'écran */
+.page-header { gap: 0.5rem; }
+.page-header h1, .page-header h2 { font-size: 1.1rem; overflow-wrap: anywhere; }
+
+/* Chat : barre latérale plus compacte sur petit écran */
+@media (max-width: 600px) {
+  .chat-sidebar { width: 42%; }
+  .chat-bubble { max-width: 85%; }
+}
+
+/* Tableaux : défilement horizontal interne, jamais la page entière */
+table { display: block; width: 100%; overflow-x: auto; }
