@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 120" role="img" aria-label="Famille & Fraîcheur">
+  <defs>
+    <linearGradient id="ffB" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22C55E"/>
+      <stop offset="1" stop-color="#166534"/>
+    </linearGradient>
+  </defs>
+  <!-- Feuille épurée (autoportante) -->
+  <path d="M54 18 C82 38 82 84 54 102 C26 84 26 38 54 18 Z" fill="url(#ffB)"/>
+  <!-- Nervure blanche, minimale -->
+  <path d="M54 28 C53 56 53 82 54 96" stroke="#FFFFFF" stroke-width="3.2" fill="none" stroke-linecap="round" opacity="0.92"/>
+  <!-- Nom (plus léger, moderne) -->
+  <text x="108" y="56" font-family="'Segoe UI',system-ui,-apple-system,Roboto,sans-serif" font-size="31" font-weight="600" fill="#166534" letter-spacing="-0.3">Famille <tspan fill="#22C55E" font-weight="800">&amp;</tspan> Fraîcheur</text>
+  <text x="110" y="83" font-family="'Segoe UI',system-ui,sans-serif" font-size="13" font-weight="500" fill="#7A8A7A" letter-spacing="0.5">Produits frais livrés · Cotonou &amp; Calavi</text>
+</svg>
