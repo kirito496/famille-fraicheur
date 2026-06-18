@@ -1,89 +1,84 @@
-// services/email.js – Envoi d'emails (vérification, réinitialisation)
-// version corrigée : fonctionne MÊME si l'email n'est pas encore configuré
+// services/email.js — Envoi d'emails via l'API HTTP de Brevo
+// (contourne le blocage SMTP de Railway : tout passe en HTTPS sur le port 443)
+//
+// Variables à définir dans Railway :
+//   BREVO_API_KEY  = ta clé API Brevo
+//   BREVO_SENDER   = ton adresse d'expéditeur VÉRIFIÉE dans Brevo
+//   FRONTEND_URL   = https://famille-fraicheur-production.up.railway.app
 
-const nodemailer = require('nodemailer');
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const SENDER_EMAIL = process.env.BREVO_SENDER || process.env.EMAIL_USER;
+const SENDER_NAME = 'Famille & Fraîcheur';
 
-const EMAIL_USER = process.env.EMAIL_USER;
-const EMAIL_PASS = process.env.EMAIL_PASS;
+const emailConfigured = Boolean(BREVO_API_KEY && SENDER_EMAIL);
 
-// L'email n'est considéré comme configuré que si les deux variables existent.
-const emailConfigured = Boolean(EMAIL_USER && EMAIL_PASS);
-
-let transporter = null;
-if (emailConfigured) {
-  transporter = nodemailer.createTransport({
-    service: 'gmail', // ou 'hotmail', 'yahoo', etc.
-    auth: {
-      user: EMAIL_USER, // votre adresse email
-      pass: EMAIL_PASS, // mot de passe d'application
-    },
-  });
-} else {
+if (!emailConfigured) {
   console.warn(
-    '⚠️  EMAIL_USER / EMAIL_PASS non configurés : aucun email ne sera envoyé. ' +
-    'Les codes de vérification et liens seront affichés dans les logs (utile pour tester).'
+    "\u26A0\uFE0F  Brevo non configure (BREVO_API_KEY / BREVO_SENDER manquants). " +
+    "Les codes et liens seront affiches dans les logs au lieu d'etre envoyes."
   );
 }
 
-/**
- * Envoie un email. Si l'email n'est pas configuré, on n'envoie rien
- * (mais on ne plante pas non plus).
- */
+// Envoie un email via l'API Brevo. Si non configure, on n'envoie rien (sans planter).
 async function sendEmail({ to, subject, html }) {
   if (!emailConfigured) {
-    console.log(`📭 [EMAIL NON CONFIGURÉ] Aurait envoyé à ${to} — sujet : "${subject}"`);
+    console.log(`\uD83D\uDCED [EMAIL NON CONFIGURE] Destinataire : ${to} — Sujet : "${subject}"`);
     return { skipped: true };
   }
 
-  const mailOptions = {
-    from: `"Famille & Fraîcheur" <${EMAIL_USER}>`,
-    to,
-    subject,
-    html,
-  };
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': BREVO_API_KEY,
+      'Content-Type': 'application/json',
+      'accept': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
+  });
 
-  const info = await transporter.sendMail(mailOptions);
-  console.log(`📧 Email envoyé à ${to} : ${info.messageId}`);
-  return info;
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Brevo a refuse l'envoi (${response.status}) : ${detail}`);
+  }
+
+  console.log(`\uD83D\uDCE7 Email envoye a ${to} via Brevo.`);
+  return response.json().catch(() => ({}));
 }
 
-/**
- * Envoie l'email de vérification avec le code.
- * Si l'email n'est pas configuré, le code est affiché dans les logs
- * pour permettre de tester l'inscription (lisible dans les logs Railway).
- */
+// Email de verification avec le code a 6 chiffres.
 async function sendVerificationEmail(to, code) {
   if (!emailConfigured) {
-    console.log(`🔐 [CODE DE VÉRIFICATION] ${to} → ${code}`);
+    console.log(`\uD83D\uDD10 [CODE DE VERIFICATION] ${to} -> ${code}`);
   }
-
   const html = `
-    <h2>Vérification de votre compte</h2>
-    <p>Voici votre code de vérification :</p>
-    <h1 style="color:#2E7D32;">${code}</h1>
+    <h2>Verification de votre compte</h2>
+    <p>Voici votre code de verification :</p>
+    <h1 style="color:#166534;letter-spacing:4px;">${code}</h1>
     <p>Ce code expire dans 1 heure.</p>
+    <p>&mdash; Famille &amp; Fraicheur</p>
   `;
-  return sendEmail({ to, subject: 'Famille & Fraîcheur - Code de vérification', html });
+  return sendEmail({ to, subject: 'Famille & Fraicheur — Code de verification', html });
 }
 
-/**
- * Envoie le lien de réinitialisation de mot de passe.
- * Si l'email n'est pas configuré, le lien est affiché dans les logs.
- */
+// Email de reinitialisation de mot de passe (lien).
 async function sendPasswordResetEmail(to, resetToken) {
   const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password.html?token=${resetToken}`;
-
   if (!emailConfigured) {
-    console.log(`🔑 [LIEN DE RÉINITIALISATION] ${to} → ${resetUrl}`);
+    console.log(`\uD83D\uDD11 [LIEN DE REINITIALISATION] ${to} -> ${resetUrl}`);
   }
-
   const html = `
-    <h2>Réinitialisation de mot de passe</h2>
-    <p>Cliquez sur le lien ci-dessous pour réinitialiser votre mot de passe :</p>
-    <a href="${resetUrl}">${resetUrl}</a>
+    <h2>Reinitialisation de mot de passe</h2>
+    <p>Cliquez sur le lien ci-dessous pour choisir un nouveau mot de passe :</p>
+    <p><a href="${resetUrl}">${resetUrl}</a></p>
     <p>Ce lien expire dans 1 heure.</p>
+    <p>&mdash; Famille &amp; Fraicheur</p>
   `;
-  return sendEmail({ to, subject: 'Famille & Fraîcheur - Réinitialisation du mot de passe', html });
+  return sendEmail({ to, subject: 'Famille & Fraicheur — Reinitialisation du mot de passe', html });
 }
 
 module.exports = { sendVerificationEmail, sendPasswordResetEmail };
